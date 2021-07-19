@@ -1,0 +1,48 @@
+syntax = "proto3";
+
+package dsrpc;
+
+option go_package = "/dsrpc";
+
+
+service KVStore {
+    rpc Put (PutRequest) returns (ErrReply) {}
+    rpc Delete (StoreKey) returns (ErrReply) {}
+    rpc Get (StoreKey) returns (StoreValue) {}
+    rpc Has (StoreKey) returns (BoolReply) {}
+    rpc GetSize (StoreKey) returns (SizeReply) {}
+    rpc Query (StoreQuery) returns (QueryReply) {}
+}
+
+message PutRequest {
+    bytes Key = 1;
+    bytes Value = 2;
+}
+
+message ErrReply {
+    string Err = 1;
+}
+
+message BoolReply {
+    bool Success = 1;
+}
+
+message SizeReply {
+    int64 Size = 1;
+}
+
+message QueryReply {
+    bytes Res = 1;
+}
+
+message StoreKey {
+    bytes Key = 1;
+}
+
+message StoreValue {
+    bytes Value = 1;
+}
+
+message StoreQuery {
+    bytes Q = 1;
+}
