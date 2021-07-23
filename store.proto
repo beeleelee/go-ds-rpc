@@ -15,7 +15,7 @@ service KVStore {
 }
 
 message PutRequest {
-    bytes Key = 1;
+    string Key = 1;
     bytes Value = 2;
 }
 
@@ -36,7 +36,7 @@ message QueryReply {
 }
 
 message StoreKey {
-    bytes Key = 1;
+    string Key = 1;
 }
 
 message StoreValue {
