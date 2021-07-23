@@ -28,4 +28,14 @@ func TestMongoStore(t *testing.T) {
 	if r.GetErr() != "" {
 		t.Fatal(r.GetErr())
 	}
+	sr, err := client.Client.GetSize(ctx, &dsrpc.StoreKey{
+		Key: "test-data-1GiB",
+	})
+
+	if err != nil {
+		t.Fatal(err)
+	}
+	if sr.GetSize() != 3<<20 {
+		t.Fatal("data size not match")
+	}
 }

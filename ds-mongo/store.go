@@ -65,6 +65,15 @@ func (ms *MongoStore) Has(ctx context.Context, req *dsrpc.StoreKey) (*dsrpc.Bool
 	return &dsrpc.BoolReply{Success: has}, nil
 }
 
+func (ms *MongoStore) GetSize(ctx context.Context, req *dsrpc.StoreKey) (*dsrpc.SizeReply, error) {
+
+	v, err := ms.client.GetSize(ctx, req.GetKey())
+	if err != nil {
+		return nil, err
+	}
+	return &dsrpc.SizeReply{Size: v}, nil
+}
+
 func (ms *MongoStore) Query(ctx context.Context, req *dsrpc.StoreQuery) (*dsrpc.QueryReply, error) {
 
 	return &dsrpc.QueryReply{Res: []byte{}}, nil
