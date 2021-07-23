@@ -2,6 +2,7 @@ package dsmongo
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	log "github.com/ipfs/go-log/v2"
@@ -35,6 +36,7 @@ func DefaultOptions() Options {
 type DSMongo struct {
 	client *mongo.Client
 	opts   Options
+	sync.RWMutex
 }
 
 func NewDSMongo(opts Options) (*DSMongo, error) {
@@ -87,9 +89,12 @@ func (dsm *DSMongo) coll() *mongo.Collection {
 
 func (dsm *DSMongo) Put(ctx context.Context, item *StoreItem) error {
 	coll := dsm.coll()
+
+	dsm.RLock()
 	err := coll.FindOne(ctx, bson.D{
 		primitive.E{Key: "_id", Value: item.ID},
 	}).Err()
+	dsm.RUnlock()
 	if err == nil { // found same block, do nothing
 		logging.Infof("put on existed block: %v, size: %d", item.ID, item.Size)
 		return nil
@@ -97,6 +102,9 @@ func (dsm *DSMongo) Put(ctx context.Context, item *StoreItem) error {
 	if err != mongo.ErrNoDocuments {
 		return err
 	}
+
+	dsm.Lock()
+	defer dsm.Unlock()
 	item.CreatedAt = time.Now()
 	item.UpdatedAt = item.CreatedAt
 	r, err := coll.InsertOne(ctx, item)
@@ -109,12 +117,18 @@ func (dsm *DSMongo) Put(ctx context.Context, item *StoreItem) error {
 
 func (dsm *DSMongo) Delete(ctx context.Context, id string) error {
 	coll := dsm.coll()
+
+	dsm.Lock()
+	defer dsm.Unlock()
 	r, err := coll.DeleteOne(ctx, bson.D{
 		primitive.E{Key: "_id", Value: id},
 	})
 
 	if err != nil {
-		return nil
+		if err == mongo.ErrNoDocuments {
+			return nil
+		}
+		return err
 	}
 
 	logging.Infof("mdb delete item, id: %d, counnt: %d", id, r.DeletedCount)
@@ -123,6 +137,9 @@ func (dsm *DSMongo) Delete(ctx context.Context, id string) error {
 
 func (dsm *DSMongo) Get(ctx context.Context, id string) ([]byte, error) {
 	coll := dsm.coll()
+
+	dsm.RLock()
+	defer dsm.RUnlock()
 	item := new(StoreItem)
 	err := coll.FindOne(ctx, bson.D{
 		primitive.E{Key: "_id", Value: id},
@@ -138,6 +155,8 @@ func (dsm *DSMongo) Get(ctx context.Context, id string) ([]byte, error) {
 func (dsm *DSMongo) Has(ctx context.Context, id string) (bool, error) {
 	coll := dsm.coll()
 
+	dsm.RLock()
+	defer dsm.RUnlock()
 	err := coll.FindOne(ctx, bson.D{
 		primitive.E{Key: "_id", Value: id},
 	}).Err()
@@ -156,6 +175,9 @@ type StoreItemOnlySize struct {
 
 func (dsm *DSMongo) GetSize(ctx context.Context, id string) (int64, error) {
 	coll := dsm.coll()
+
+	dsm.RLock()
+	defer dsm.RUnlock()
 	item := new(StoreItemOnlySize)
 	err := coll.FindOne(ctx, bson.D{
 		primitive.E{Key: "_id", Value: id},
