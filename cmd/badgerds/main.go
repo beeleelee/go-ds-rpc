@@ -11,18 +11,16 @@ import (
 	"syscall"
 
 	"github.com/beeleelee/dsrpc"
-	dsmongo "github.com/beeleelee/dsrpc/ds-mongo"
+	dsbadager "github.com/beeleelee/dsrpc/ds-badger"
 	log "github.com/ipfs/go-log/v2"
 	"google.golang.org/grpc"
 )
 
-var logging = log.Logger("mongods")
+var logging = log.Logger("badgerds")
 
 var (
 	listenPort uint
-	dbUri      string
-	dbName     string
-	collName   string
+	dbPath     string
 )
 
 func init() {
@@ -31,24 +29,22 @@ func init() {
 
 func main() {
 	logging.Info("### 启动中... ###")
-	flag.UintVar(&listenPort, "port", 1516, "rpc listen port")
-	flag.StringVar(&dbUri, "db-uri", "", "db connection address")
-	flag.StringVar(&dbName, "db-name", "", "db name")
-	flag.StringVar(&collName, "coll-name", "", "db collection")
+	flag.UintVar(&listenPort, "port", 1517, "rpc listen port")
+	flag.StringVar(&dbPath, "path", "", "badger db path")
 	flag.Parse()
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	ms, err := dsmongo.NewMongoStore(dsmongo.Options{
-		Uri:      dbUri,
-		DBName:   dbName,
-		CollName: collName,
-	})
+	if dbPath == "" {
+		logging.Fatal("badger db path is need")
+	}
+	logging.Infof("db path: %s", dbPath)
+	bs, err := dsbadager.NewBadgerStore(dbPath)
 	if err != nil {
 		logging.Fatal(err)
 	}
-	defer ms.Close(ctx)
+	defer bs.Close(ctx)
 
 	// 启动 pinner rpc服务
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", listenPort))
@@ -58,7 +54,7 @@ func main() {
 
 	// TODO 使用https证书建立安全通道
 	rpcSrv := grpc.NewServer()
-	dsrpc.RegisterKVStoreServer(rpcSrv, ms)
+	dsrpc.RegisterKVStoreServer(rpcSrv, bs)
 	go func() {
 		if err := rpcSrv.Serve(lis); err != nil && err != http.ErrServerClosed {
 			logging.Fatalf("rpc listen: %s\n", err)
