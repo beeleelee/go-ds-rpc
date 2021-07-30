@@ -8,17 +8,17 @@ import (
 	"crypto/rand"
 
 	"github.com/beeleelee/dsrpc"
-	dsmongo "github.com/beeleelee/dsrpc/ds-mongo"
+	dsmongo "github.com/beeleelee/dsrpc/ds-mongo2"
 	dag "github.com/ipfs/go-merkledag"
 )
 
 func TestMongoStore(t *testing.T) {
-	rpc_uri := "127.0.0.1:1517"
+	rpc_uri := "127.0.0.1:1518"
 	client, err := dsmongo.NewMongoStoreClient(rpc_uri)
 	if err != nil {
 		t.Fatal(err)
 	}
-	dataNum := 1024
+	dataNum := 1500
 	dataSize := 1 << 20
 
 	ctx := context.Background()
