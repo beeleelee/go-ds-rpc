@@ -1,7 +1,7 @@
 package dsmongo
 
 import (
-	"github.com/beeleelee/dsrpc"
+	dsrpc "github.com/beeleelee/go-ds-rpc"
 	"google.golang.org/grpc"
 )
 

@@ -5,7 +5,7 @@ import (
 	"crypto/sha256"
 	"fmt"
 
-	"github.com/beeleelee/dsrpc"
+	dsrpc "github.com/beeleelee/go-ds-rpc"
 )
 
 type MongoStore struct {

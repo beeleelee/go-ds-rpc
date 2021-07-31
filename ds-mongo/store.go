@@ -3,7 +3,7 @@ package dsmongo
 import (
 	"context"
 
-	"github.com/beeleelee/dsrpc"
+	dsrpc "github.com/beeleelee/go-ds-rpc"
 )
 
 type MongoStore struct {

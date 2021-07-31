@@ -1,4 +1,4 @@
-module github.com/beeleelee/dsrpc
+module github.com/beeleelee/go-ds-rpc
 
 go 1.15
 

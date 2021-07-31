@@ -3,7 +3,7 @@ package dsbadger
 import (
 	"context"
 
-	"github.com/beeleelee/dsrpc"
+	dsrpc "github.com/beeleelee/go-ds-rpc"
 	ds "github.com/ipfs/go-datastore"
 	badgerds3 "github.com/textileio/go-ds-badger3"
 )

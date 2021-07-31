@@ -10,8 +10,8 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/beeleelee/dsrpc"
-	dsbadager "github.com/beeleelee/dsrpc/ds-badger"
+	dsrpc "github.com/beeleelee/go-ds-rpc"
+	dsbadager "github.com/beeleelee/go-ds-rpc/ds-badger"
 	log "github.com/ipfs/go-log/v2"
 	"google.golang.org/grpc"
 )
