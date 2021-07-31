@@ -5,9 +5,11 @@ import (
 	"google.golang.org/grpc"
 )
 
+var _ dsrpc.KVStoreClient = (*MongoStoreClient)(nil)
+
 type MongoStoreClient struct {
-	conn   *grpc.ClientConn
-	Client dsrpc.KVStoreClient
+	conn *grpc.ClientConn
+	dsrpc.KVStoreClient
 }
 
 func NewMongoStoreClient(srv string) (*MongoStoreClient, error) {
@@ -20,8 +22,8 @@ func NewMongoStoreClient(srv string) (*MongoStoreClient, error) {
 	}
 
 	return &MongoStoreClient{
-		conn:   conn,
-		Client: dsrpc.NewKVStoreClient(conn),
+		conn:          conn,
+		KVStoreClient: dsrpc.NewKVStoreClient(conn),
 	}, nil
 }
 
