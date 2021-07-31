@@ -87,5 +87,4 @@ func TestMongoStore(t *testing.T) {
 		}
 	}
 	t.Logf("delete time elapsed: %v", time.Now().Sub(deleteStart))
-	t.Fail()
 }
