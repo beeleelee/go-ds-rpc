@@ -16,7 +16,7 @@ import (
 	"google.golang.org/grpc"
 )
 
-var logging = log.Logger("mongods2")
+var logging = log.Logger("mongods")
 
 var (
 	listenPort uint
@@ -32,7 +32,7 @@ func init() {
 
 func main() {
 	logging.Info("### 启动中... ###")
-	flag.UintVar(&listenPort, "port", 1518, "rpc listen port")
+	flag.UintVar(&listenPort, "port", 1520, "rpc listen port")
 	flag.StringVar(&dbUri, "db-uri", "", "db connection address")
 	flag.StringVar(&dbName, "db-name", "", "db name")
 	flag.StringVar(&storeName, "store-name", "", "db store name")

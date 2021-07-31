@@ -5,10 +5,12 @@ import (
 
 	ds "github.com/ipfs/go-datastore"
 	dsq "github.com/ipfs/go-datastore/query"
+	log "github.com/ipfs/go-log/v2"
 	"go.mongodb.org/mongo-driver/mongo"
 	"golang.org/x/xerrors"
 )
 
+var logging = log.Logger("dsrpc")
 var _ ds.Batching = (*DataStore)(nil)
 
 type DataStore struct {
@@ -44,6 +46,7 @@ func (d *DataStore) Get(k ds.Key) ([]byte, error) {
 	r, err := d.client.Get(d.ctx, &StoreKey{
 		Key: k.String(),
 	})
+	logging.Info(k)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			return nil, ds.ErrNotFound
