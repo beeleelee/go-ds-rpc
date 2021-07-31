@@ -8,7 +8,7 @@ import (
 	"crypto/rand"
 
 	dsrpc "github.com/beeleelee/go-ds-rpc"
-	dsmongo "github.com/beeleelee/go-ds-rpc/ds-mongo2"
+	dsmongo "github.com/beeleelee/go-ds-rpc/ds-mongo"
 	dag "github.com/ipfs/go-merkledag"
 )
 

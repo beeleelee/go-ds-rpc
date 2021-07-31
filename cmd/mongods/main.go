@@ -16,13 +16,14 @@ import (
 	"google.golang.org/grpc"
 )
 
-var logging = log.Logger("mongods")
+var logging = log.Logger("mongods2")
 
 var (
 	listenPort uint
 	dbUri      string
 	dbName     string
-	collName   string
+	storeName  string
+	refName    string
 )
 
 func init() {
@@ -31,19 +32,21 @@ func init() {
 
 func main() {
 	logging.Info("### 启动中... ###")
-	flag.UintVar(&listenPort, "port", 1516, "rpc listen port")
+	flag.UintVar(&listenPort, "port", 1518, "rpc listen port")
 	flag.StringVar(&dbUri, "db-uri", "", "db connection address")
 	flag.StringVar(&dbName, "db-name", "", "db name")
-	flag.StringVar(&collName, "coll-name", "", "db collection")
+	flag.StringVar(&storeName, "store-name", "", "db store name")
+	flag.StringVar(&refName, "ref-name", "", "db ref name")
 	flag.Parse()
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	ms, err := dsmongo.NewMongoStore(dsmongo.Options{
-		Uri:      dbUri,
-		DBName:   dbName,
-		CollName: collName,
+		Uri:           dbUri,
+		DBName:        dbName,
+		StoreName:     storeName,
+		StoreRefsName: refName,
 	})
 	if err != nil {
 		logging.Fatal(err)
