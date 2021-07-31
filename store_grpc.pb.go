@@ -18,12 +18,12 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type KVStoreClient interface {
-	Put(ctx context.Context, in *PutRequest, opts ...grpc.CallOption) (*ErrReply, error)
-	Delete(ctx context.Context, in *StoreKey, opts ...grpc.CallOption) (*ErrReply, error)
-	Get(ctx context.Context, in *StoreKey, opts ...grpc.CallOption) (*StoreValue, error)
-	Has(ctx context.Context, in *StoreKey, opts ...grpc.CallOption) (*BoolReply, error)
-	GetSize(ctx context.Context, in *StoreKey, opts ...grpc.CallOption) (*SizeReply, error)
-	Query(ctx context.Context, in *StoreQuery, opts ...grpc.CallOption) (*QueryReply, error)
+	Put(ctx context.Context, in *CommonRequest, opts ...grpc.CallOption) (*CommonReply, error)
+	Delete(ctx context.Context, in *CommonRequest, opts ...grpc.CallOption) (*CommonReply, error)
+	Get(ctx context.Context, in *CommonRequest, opts ...grpc.CallOption) (*CommonReply, error)
+	Has(ctx context.Context, in *CommonRequest, opts ...grpc.CallOption) (*CommonReply, error)
+	GetSize(ctx context.Context, in *CommonRequest, opts ...grpc.CallOption) (*CommonReply, error)
+	Query(ctx context.Context, in *QueryRequest, opts ...grpc.CallOption) (*QueryReply, error)
 }
 
 type kVStoreClient struct {
@@ -34,8 +34,8 @@ func NewKVStoreClient(cc grpc.ClientConnInterface) KVStoreClient {
 	return &kVStoreClient{cc}
 }
 
-func (c *kVStoreClient) Put(ctx context.Context, in *PutRequest, opts ...grpc.CallOption) (*ErrReply, error) {
-	out := new(ErrReply)
+func (c *kVStoreClient) Put(ctx context.Context, in *CommonRequest, opts ...grpc.CallOption) (*CommonReply, error) {
+	out := new(CommonReply)
 	err := c.cc.Invoke(ctx, "/dsrpc.KVStore/Put", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -43,8 +43,8 @@ func (c *kVStoreClient) Put(ctx context.Context, in *PutRequest, opts ...grpc.Ca
 	return out, nil
 }
 
-func (c *kVStoreClient) Delete(ctx context.Context, in *StoreKey, opts ...grpc.CallOption) (*ErrReply, error) {
-	out := new(ErrReply)
+func (c *kVStoreClient) Delete(ctx context.Context, in *CommonRequest, opts ...grpc.CallOption) (*CommonReply, error) {
+	out := new(CommonReply)
 	err := c.cc.Invoke(ctx, "/dsrpc.KVStore/Delete", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -52,8 +52,8 @@ func (c *kVStoreClient) Delete(ctx context.Context, in *StoreKey, opts ...grpc.C
 	return out, nil
 }
 
-func (c *kVStoreClient) Get(ctx context.Context, in *StoreKey, opts ...grpc.CallOption) (*StoreValue, error) {
-	out := new(StoreValue)
+func (c *kVStoreClient) Get(ctx context.Context, in *CommonRequest, opts ...grpc.CallOption) (*CommonReply, error) {
+	out := new(CommonReply)
 	err := c.cc.Invoke(ctx, "/dsrpc.KVStore/Get", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -61,8 +61,8 @@ func (c *kVStoreClient) Get(ctx context.Context, in *StoreKey, opts ...grpc.Call
 	return out, nil
 }
 
-func (c *kVStoreClient) Has(ctx context.Context, in *StoreKey, opts ...grpc.CallOption) (*BoolReply, error) {
-	out := new(BoolReply)
+func (c *kVStoreClient) Has(ctx context.Context, in *CommonRequest, opts ...grpc.CallOption) (*CommonReply, error) {
+	out := new(CommonReply)
 	err := c.cc.Invoke(ctx, "/dsrpc.KVStore/Has", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -70,8 +70,8 @@ func (c *kVStoreClient) Has(ctx context.Context, in *StoreKey, opts ...grpc.Call
 	return out, nil
 }
 
-func (c *kVStoreClient) GetSize(ctx context.Context, in *StoreKey, opts ...grpc.CallOption) (*SizeReply, error) {
-	out := new(SizeReply)
+func (c *kVStoreClient) GetSize(ctx context.Context, in *CommonRequest, opts ...grpc.CallOption) (*CommonReply, error) {
+	out := new(CommonReply)
 	err := c.cc.Invoke(ctx, "/dsrpc.KVStore/GetSize", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -79,7 +79,7 @@ func (c *kVStoreClient) GetSize(ctx context.Context, in *StoreKey, opts ...grpc.
 	return out, nil
 }
 
-func (c *kVStoreClient) Query(ctx context.Context, in *StoreQuery, opts ...grpc.CallOption) (*QueryReply, error) {
+func (c *kVStoreClient) Query(ctx context.Context, in *QueryRequest, opts ...grpc.CallOption) (*QueryReply, error) {
 	out := new(QueryReply)
 	err := c.cc.Invoke(ctx, "/dsrpc.KVStore/Query", in, out, opts...)
 	if err != nil {
@@ -92,12 +92,12 @@ func (c *kVStoreClient) Query(ctx context.Context, in *StoreQuery, opts ...grpc.
 // All implementations must embed UnimplementedKVStoreServer
 // for forward compatibility
 type KVStoreServer interface {
-	Put(context.Context, *PutRequest) (*ErrReply, error)
-	Delete(context.Context, *StoreKey) (*ErrReply, error)
-	Get(context.Context, *StoreKey) (*StoreValue, error)
-	Has(context.Context, *StoreKey) (*BoolReply, error)
-	GetSize(context.Context, *StoreKey) (*SizeReply, error)
-	Query(context.Context, *StoreQuery) (*QueryReply, error)
+	Put(context.Context, *CommonRequest) (*CommonReply, error)
+	Delete(context.Context, *CommonRequest) (*CommonReply, error)
+	Get(context.Context, *CommonRequest) (*CommonReply, error)
+	Has(context.Context, *CommonRequest) (*CommonReply, error)
+	GetSize(context.Context, *CommonRequest) (*CommonReply, error)
+	Query(context.Context, *QueryRequest) (*QueryReply, error)
 	mustEmbedUnimplementedKVStoreServer()
 }
 
@@ -105,22 +105,22 @@ type KVStoreServer interface {
 type UnimplementedKVStoreServer struct {
 }
 
-func (UnimplementedKVStoreServer) Put(context.Context, *PutRequest) (*ErrReply, error) {
+func (UnimplementedKVStoreServer) Put(context.Context, *CommonRequest) (*CommonReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Put not implemented")
 }
-func (UnimplementedKVStoreServer) Delete(context.Context, *StoreKey) (*ErrReply, error) {
+func (UnimplementedKVStoreServer) Delete(context.Context, *CommonRequest) (*CommonReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Delete not implemented")
 }
-func (UnimplementedKVStoreServer) Get(context.Context, *StoreKey) (*StoreValue, error) {
+func (UnimplementedKVStoreServer) Get(context.Context, *CommonRequest) (*CommonReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Get not implemented")
 }
-func (UnimplementedKVStoreServer) Has(context.Context, *StoreKey) (*BoolReply, error) {
+func (UnimplementedKVStoreServer) Has(context.Context, *CommonRequest) (*CommonReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Has not implemented")
 }
-func (UnimplementedKVStoreServer) GetSize(context.Context, *StoreKey) (*SizeReply, error) {
+func (UnimplementedKVStoreServer) GetSize(context.Context, *CommonRequest) (*CommonReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetSize not implemented")
 }
-func (UnimplementedKVStoreServer) Query(context.Context, *StoreQuery) (*QueryReply, error) {
+func (UnimplementedKVStoreServer) Query(context.Context, *QueryRequest) (*QueryReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Query not implemented")
 }
 func (UnimplementedKVStoreServer) mustEmbedUnimplementedKVStoreServer() {}
@@ -137,7 +137,7 @@ func RegisterKVStoreServer(s grpc.ServiceRegistrar, srv KVStoreServer) {
 }
 
 func _KVStore_Put_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(PutRequest)
+	in := new(CommonRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -149,13 +149,13 @@ func _KVStore_Put_Handler(srv interface{}, ctx context.Context, dec func(interfa
 		FullMethod: "/dsrpc.KVStore/Put",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(KVStoreServer).Put(ctx, req.(*PutRequest))
+		return srv.(KVStoreServer).Put(ctx, req.(*CommonRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _KVStore_Delete_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(StoreKey)
+	in := new(CommonRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -167,13 +167,13 @@ func _KVStore_Delete_Handler(srv interface{}, ctx context.Context, dec func(inte
 		FullMethod: "/dsrpc.KVStore/Delete",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(KVStoreServer).Delete(ctx, req.(*StoreKey))
+		return srv.(KVStoreServer).Delete(ctx, req.(*CommonRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _KVStore_Get_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(StoreKey)
+	in := new(CommonRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -185,13 +185,13 @@ func _KVStore_Get_Handler(srv interface{}, ctx context.Context, dec func(interfa
 		FullMethod: "/dsrpc.KVStore/Get",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(KVStoreServer).Get(ctx, req.(*StoreKey))
+		return srv.(KVStoreServer).Get(ctx, req.(*CommonRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _KVStore_Has_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(StoreKey)
+	in := new(CommonRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -203,13 +203,13 @@ func _KVStore_Has_Handler(srv interface{}, ctx context.Context, dec func(interfa
 		FullMethod: "/dsrpc.KVStore/Has",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(KVStoreServer).Has(ctx, req.(*StoreKey))
+		return srv.(KVStoreServer).Has(ctx, req.(*CommonRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _KVStore_GetSize_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(StoreKey)
+	in := new(CommonRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -221,13 +221,13 @@ func _KVStore_GetSize_Handler(srv interface{}, ctx context.Context, dec func(int
 		FullMethod: "/dsrpc.KVStore/GetSize",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(KVStoreServer).GetSize(ctx, req.(*StoreKey))
+		return srv.(KVStoreServer).GetSize(ctx, req.(*CommonRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _KVStore_Query_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(StoreQuery)
+	in := new(QueryRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -239,7 +239,7 @@ func _KVStore_Query_Handler(srv interface{}, ctx context.Context, dec func(inter
 		FullMethod: "/dsrpc.KVStore/Query",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(KVStoreServer).Query(ctx, req.(*StoreQuery))
+		return srv.(KVStoreServer).Query(ctx, req.(*QueryRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }

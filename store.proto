@@ -4,45 +4,39 @@ package dsrpc;
 
 option go_package = "/dsrpc";
 
-
 service KVStore {
-    rpc Put (PutRequest) returns (ErrReply) {}
-    rpc Delete (StoreKey) returns (ErrReply) {}
-    rpc Get (StoreKey) returns (StoreValue) {}
-    rpc Has (StoreKey) returns (BoolReply) {}
-    rpc GetSize (StoreKey) returns (SizeReply) {}
-    rpc Query (StoreQuery) returns (QueryReply) {}
+    rpc Put (CommonRequest) returns (CommonReply) {}
+    rpc Delete (CommonRequest) returns (CommonReply) {}
+    rpc Get (CommonRequest) returns (CommonReply) {}
+    rpc Has (CommonRequest) returns (CommonReply) {}
+    rpc GetSize (CommonRequest) returns (CommonReply) {}
+    rpc Query (QueryRequest) returns (QueryReply) {}
 }
 
-message PutRequest {
+enum ErrCode {
+    None = 0;
+    ErrNotFound = 1;
+}
+
+message CommonRequest {
     string key = 1;
     bytes value = 2;
 }
 
-message ErrReply {
-    string err = 1;
+message CommonReply {
+    ErrCode code = 1;
+    string msg = 2;
+    bytes value = 3;
+    bool success = 4;
+    int64 size = 5;
 }
 
-message BoolReply {
-    bool success = 1;
-}
-
-message SizeReply {
-    int64 size = 1;
+message QueryRequest {
+    bytes q = 1;
 }
 
 message QueryReply {
-    bytes res = 1;
-}
-
-message StoreKey {
-    string key = 1;
-}
-
-message StoreValue {
-    bytes value = 1;
-}
-
-message StoreQuery {
-    bytes q = 1;
+    ErrCode code = 1;
+    string msg = 2;
+    bytes res = 3;
 }

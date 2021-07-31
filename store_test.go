@@ -9,11 +9,12 @@ import (
 
 	dsrpc "github.com/beeleelee/go-ds-rpc"
 	dsmongo "github.com/beeleelee/go-ds-rpc/ds-mongo"
+	ds "github.com/ipfs/go-datastore"
 	dag "github.com/ipfs/go-merkledag"
 )
 
 func TestMongoStore(t *testing.T) {
-	rpc_uri := "127.0.0.1:1518"
+	rpc_uri := "127.0.0.1:1520"
 	client, err := dsmongo.NewMongoStoreClient(rpc_uri)
 	if err != nil {
 		t.Fatal(err)
@@ -31,22 +32,19 @@ func TestMongoStore(t *testing.T) {
 	}
 	putStart := time.Now()
 	for _, dn := range dagList {
-		r, err := client.Put(ctx, &dsrpc.PutRequest{
+		_, err := client.Put(ctx, &dsrpc.CommonRequest{
 			Key:   dn.Cid().String(),
 			Value: dn.Data(),
 		})
 		if err != nil {
 			t.Fatal(err)
 		}
-		if r.GetErr() != "" {
-			t.Fatal(r.GetErr())
-		}
 	}
 	t.Logf("put time elapsed: %v", time.Now().Sub(putStart))
 
 	getStart := time.Now()
 	for _, dn := range dagList {
-		_, err := client.Get(ctx, &dsrpc.StoreKey{
+		_, err := client.Get(ctx, &dsrpc.CommonRequest{
 			Key: dn.Cid().String(),
 		})
 		if err != nil {
@@ -57,7 +55,7 @@ func TestMongoStore(t *testing.T) {
 
 	getSizeStart := time.Now()
 	for _, dn := range dagList {
-		_, err := client.GetSize(ctx, &dsrpc.StoreKey{
+		_, err := client.GetSize(ctx, &dsrpc.CommonRequest{
 			Key: dn.Cid().String(),
 		})
 		if err != nil {
@@ -68,7 +66,7 @@ func TestMongoStore(t *testing.T) {
 
 	hasStart := time.Now()
 	for _, dn := range dagList {
-		_, err := client.Has(ctx, &dsrpc.StoreKey{
+		_, err := client.Has(ctx, &dsrpc.CommonRequest{
 			Key: dn.Cid().String(),
 		})
 		if err != nil {
@@ -79,7 +77,7 @@ func TestMongoStore(t *testing.T) {
 
 	deleteStart := time.Now()
 	for _, dn := range dagList {
-		_, err := client.Delete(ctx, &dsrpc.StoreKey{
+		_, err := client.Delete(ctx, &dsrpc.CommonRequest{
 			Key: dn.Cid().String(),
 		})
 		if err != nil {
@@ -87,4 +85,29 @@ func TestMongoStore(t *testing.T) {
 		}
 	}
 	t.Logf("delete time elapsed: %v", time.Now().Sub(deleteStart))
+	t.Fail()
+}
+
+func TestGet(t *testing.T) {
+	rpc_uri := "127.0.0.1:1520"
+	client, err := dsmongo.NewMongoStoreClient(rpc_uri)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := context.Background()
+
+	r, err := client.Get(ctx, &dsrpc.CommonRequest{
+		Key: "/pins/state/dirty",
+	})
+	t.Log(r.GetCode())
+	t.Log(r.GetMsg())
+
+	if err != nil {
+		if r.GetCode() == dsrpc.ErrCode_ErrNotFound {
+			t.Fatal(ds.ErrNotFound)
+			return
+		}
+		t.Fatal(err)
+	}
+
 }

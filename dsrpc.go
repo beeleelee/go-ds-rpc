@@ -2,11 +2,11 @@ package dsrpc
 
 import (
 	context "context"
+	"fmt"
 
 	ds "github.com/ipfs/go-datastore"
 	dsq "github.com/ipfs/go-datastore/query"
 	log "github.com/ipfs/go-log/v2"
-	"go.mongodb.org/mongo-driver/mongo"
 	"golang.org/x/xerrors"
 )
 
@@ -29,26 +29,28 @@ func NewDataStore(client KVStoreClient) (*DataStore, error) {
 }
 
 func (d *DataStore) Put(k ds.Key, value []byte) error {
-	r, err := d.client.Put(d.ctx, &PutRequest{
+	r, err := d.client.Put(d.ctx, &CommonRequest{
 		Key:   k.String(),
 		Value: value,
 	})
 	if err != nil {
 		return err
 	}
-	if r.GetErr() != "" {
-		return xerrors.New(r.GetErr())
+	if r.GetCode() != ErrCode_None {
+		return xerrors.New(r.GetMsg())
 	}
 	return nil
 }
 
 func (d *DataStore) Get(k ds.Key) ([]byte, error) {
-	r, err := d.client.Get(d.ctx, &StoreKey{
+	fmt.Println("*********")
+	r, err := d.client.Get(d.ctx, &CommonRequest{
 		Key: k.String(),
 	})
-	logging.Info(k)
 	if err != nil {
-		if err == mongo.ErrNoDocuments {
+		logging.Error(r.GetCode())
+		logging.Error(r.GetMsg())
+		if r.GetCode() == ErrCode_ErrNotFound {
 			return nil, ds.ErrNotFound
 		}
 		return nil, err
@@ -57,24 +59,21 @@ func (d *DataStore) Get(k ds.Key) ([]byte, error) {
 }
 
 func (d *DataStore) Has(k ds.Key) (bool, error) {
-	r, err := d.client.Has(d.ctx, &StoreKey{
+	r, err := d.client.Has(d.ctx, &CommonRequest{
 		Key: k.String(),
 	})
 	if err != nil {
-		if err == mongo.ErrNoDocuments {
-			return false, ds.ErrNotFound
-		}
 		return false, err
 	}
 	return r.GetSuccess(), nil
 }
 
 func (d *DataStore) GetSize(k ds.Key) (int, error) {
-	r, err := d.client.GetSize(d.ctx, &StoreKey{
+	r, err := d.client.GetSize(d.ctx, &CommonRequest{
 		Key: k.String(),
 	})
 	if err != nil {
-		if err == mongo.ErrNoDocuments {
+		if r.GetCode() == ErrCode_ErrNotFound {
 			return 0, ds.ErrNotFound
 		}
 		return 0, err
@@ -83,17 +82,14 @@ func (d *DataStore) GetSize(k ds.Key) (int, error) {
 }
 
 func (d *DataStore) Delete(k ds.Key) error {
-	r, err := d.client.Delete(d.ctx, &StoreKey{
+	r, err := d.client.Delete(d.ctx, &CommonRequest{
 		Key: k.String(),
 	})
 	if err != nil {
-		if err == mongo.ErrNoDocuments {
+		if r.GetCode() == ErrCode_ErrNotFound {
 			return ds.ErrNotFound
 		}
 		return err
-	}
-	if r.GetErr() != "" {
-		return xerrors.New(r.GetErr())
 	}
 	return nil
 }

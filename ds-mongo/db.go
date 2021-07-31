@@ -11,7 +11,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-var logging = log.Logger("dsrpc/dsmongo2")
+var logging = log.Logger("dsrpc/dsmongo")
 
 const (
 	db_name         = "datastore"

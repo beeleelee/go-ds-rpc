@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	dsrpc "github.com/beeleelee/go-ds-rpc"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type MongoStore struct {
@@ -23,7 +24,7 @@ func NewMongoStore(opts Options) (*MongoStore, error) {
 	}, nil
 }
 
-func (ms *MongoStore) Put(ctx context.Context, req *dsrpc.PutRequest) (*dsrpc.ErrReply, error) {
+func (ms *MongoStore) Put(ctx context.Context, req *dsrpc.CommonRequest) (*dsrpc.CommonReply, error) {
 	hk := sha256String(req.GetValue())
 
 	refItem := &RefItem{
@@ -36,48 +37,79 @@ func (ms *MongoStore) Put(ctx context.Context, req *dsrpc.PutRequest) (*dsrpc.Er
 	}
 	err := ms.client.Put(ctx, storeItem, refItem)
 	if err != nil {
-		return &dsrpc.ErrReply{
-			Err: err.Error(),
-		}, err
+		r := &dsrpc.CommonReply{
+			Msg: err.Error(),
+		}
+		if err == mongo.ErrNoDocuments {
+			r.Code = dsrpc.ErrCode_ErrNotFound
+		}
+		return r, err
 	}
-	return &dsrpc.ErrReply{}, nil
+	return &dsrpc.CommonReply{}, nil
 }
 
-func (ms *MongoStore) Delete(ctx context.Context, req *dsrpc.StoreKey) (*dsrpc.ErrReply, error) {
+func (ms *MongoStore) Delete(ctx context.Context, req *dsrpc.CommonRequest) (*dsrpc.CommonReply, error) {
 	err := ms.client.Delete(ctx, req.GetKey())
 	if err != nil {
-		return &dsrpc.ErrReply{
-			Err: err.Error(),
-		}, err
+		r := &dsrpc.CommonReply{
+			Msg: err.Error(),
+		}
+		if err == mongo.ErrNoDocuments {
+			r.Code = dsrpc.ErrCode_ErrNotFound
+		}
+		return r, err
 	}
-	return &dsrpc.ErrReply{}, nil
+	return &dsrpc.CommonReply{}, nil
 }
 
-func (ms *MongoStore) Get(ctx context.Context, req *dsrpc.StoreKey) (*dsrpc.StoreValue, error) {
+func (ms *MongoStore) Get(ctx context.Context, req *dsrpc.CommonRequest) (*dsrpc.CommonReply, error) {
 	v, err := ms.client.Get(ctx, req.GetKey())
 	if err != nil {
-		return nil, err
+		// logging.Info("=====")
+		// logging.Warn(err)
+		// logging.Info("=====")
+		r := &dsrpc.CommonReply{
+			Msg: err.Error(),
+		}
+		if err == mongo.ErrNoDocuments {
+			logging.Info("mongo not found")
+			r.Code = dsrpc.ErrCode_ErrNotFound
+		}
+		logging.Infof("%v, %v", r.GetCode(), r.GetMsg())
+		return r, err
 	}
-	return &dsrpc.StoreValue{Value: v}, nil
+	return &dsrpc.CommonReply{Value: v}, nil
 }
 
-func (ms *MongoStore) Has(ctx context.Context, req *dsrpc.StoreKey) (*dsrpc.BoolReply, error) {
+func (ms *MongoStore) Has(ctx context.Context, req *dsrpc.CommonRequest) (*dsrpc.CommonReply, error) {
 	has, err := ms.client.Has(ctx, req.GetKey())
 	if err != nil {
-		return &dsrpc.BoolReply{Success: false}, err
+		r := &dsrpc.CommonReply{
+			Msg: err.Error(),
+		}
+		if err == mongo.ErrNoDocuments {
+			r.Code = dsrpc.ErrCode_ErrNotFound
+		}
+		return r, err
 	}
-	return &dsrpc.BoolReply{Success: has}, nil
+	return &dsrpc.CommonReply{Success: has}, nil
 }
 
-func (ms *MongoStore) GetSize(ctx context.Context, req *dsrpc.StoreKey) (*dsrpc.SizeReply, error) {
+func (ms *MongoStore) GetSize(ctx context.Context, req *dsrpc.CommonRequest) (*dsrpc.CommonReply, error) {
 	v, err := ms.client.GetSize(ctx, req.GetKey())
 	if err != nil {
-		return nil, err
+		r := &dsrpc.CommonReply{
+			Msg: err.Error(),
+		}
+		if err == mongo.ErrNoDocuments {
+			r.Code = dsrpc.ErrCode_ErrNotFound
+		}
+		return r, err
 	}
-	return &dsrpc.SizeReply{Size: v}, nil
+	return &dsrpc.CommonReply{Size: v}, nil
 }
 
-func (ms *MongoStore) Query(ctx context.Context, req *dsrpc.StoreQuery) (*dsrpc.QueryReply, error) {
+func (ms *MongoStore) Query(ctx context.Context, req *dsrpc.QueryRequest) (*dsrpc.QueryReply, error) {
 
 	return &dsrpc.QueryReply{Res: []byte{}}, nil
 }
