@@ -31,7 +31,7 @@ func TestMongoStore(t *testing.T) {
 	}
 	putStart := time.Now()
 	for _, dn := range dagList {
-		r, err := client.Client.Put(ctx, &dsrpc.PutRequest{
+		r, err := client.Put(ctx, &dsrpc.PutRequest{
 			Key:   dn.Cid().String(),
 			Value: dn.Data(),
 		})
@@ -46,7 +46,7 @@ func TestMongoStore(t *testing.T) {
 
 	getStart := time.Now()
 	for _, dn := range dagList {
-		_, err := client.Client.Get(ctx, &dsrpc.StoreKey{
+		_, err := client.Get(ctx, &dsrpc.StoreKey{
 			Key: dn.Cid().String(),
 		})
 		if err != nil {
@@ -57,7 +57,7 @@ func TestMongoStore(t *testing.T) {
 
 	getSizeStart := time.Now()
 	for _, dn := range dagList {
-		_, err := client.Client.GetSize(ctx, &dsrpc.StoreKey{
+		_, err := client.GetSize(ctx, &dsrpc.StoreKey{
 			Key: dn.Cid().String(),
 		})
 		if err != nil {
@@ -68,7 +68,7 @@ func TestMongoStore(t *testing.T) {
 
 	hasStart := time.Now()
 	for _, dn := range dagList {
-		_, err := client.Client.Has(ctx, &dsrpc.StoreKey{
+		_, err := client.Has(ctx, &dsrpc.StoreKey{
 			Key: dn.Cid().String(),
 		})
 		if err != nil {
@@ -79,7 +79,7 @@ func TestMongoStore(t *testing.T) {
 
 	deleteStart := time.Now()
 	for _, dn := range dagList {
-		_, err := client.Client.Delete(ctx, &dsrpc.StoreKey{
+		_, err := client.Delete(ctx, &dsrpc.StoreKey{
 			Key: dn.Cid().String(),
 		})
 		if err != nil {
