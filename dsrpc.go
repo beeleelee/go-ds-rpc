@@ -5,6 +5,7 @@ import (
 
 	ds "github.com/ipfs/go-datastore"
 	dsq "github.com/ipfs/go-datastore/query"
+	"go.mongodb.org/mongo-driver/mongo"
 	"golang.org/x/xerrors"
 )
 
@@ -44,6 +45,9 @@ func (d *DataStore) Get(k ds.Key) ([]byte, error) {
 		Key: k.String(),
 	})
 	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, ds.ErrNotFound
+		}
 		return nil, err
 	}
 	return r.GetValue(), nil
@@ -54,6 +58,9 @@ func (d *DataStore) Has(k ds.Key) (bool, error) {
 		Key: k.String(),
 	})
 	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return false, ds.ErrNotFound
+		}
 		return false, err
 	}
 	return r.GetSuccess(), nil
@@ -64,6 +71,9 @@ func (d *DataStore) GetSize(k ds.Key) (int, error) {
 		Key: k.String(),
 	})
 	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return 0, ds.ErrNotFound
+		}
 		return 0, err
 	}
 	return int(r.GetSize()), nil
@@ -74,6 +84,9 @@ func (d *DataStore) Delete(k ds.Key) error {
 		Key: k.String(),
 	})
 	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return ds.ErrNotFound
+		}
 		return err
 	}
 	if r.GetErr() != "" {
