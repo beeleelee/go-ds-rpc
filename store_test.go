@@ -9,7 +9,6 @@ import (
 
 	dsrpc "github.com/beeleelee/go-ds-rpc"
 	dsmongo "github.com/beeleelee/go-ds-rpc/ds-mongo"
-	ds "github.com/ipfs/go-datastore"
 	dag "github.com/ipfs/go-merkledag"
 )
 
@@ -85,29 +84,4 @@ func TestMongoStore(t *testing.T) {
 		}
 	}
 	t.Logf("delete time elapsed: %v", time.Now().Sub(deleteStart))
-	t.Fail()
-}
-
-func TestGet(t *testing.T) {
-	rpc_uri := "127.0.0.1:1520"
-	client, err := dsmongo.NewMongoStoreClient(rpc_uri)
-	if err != nil {
-		t.Fatal(err)
-	}
-	ctx := context.Background()
-
-	r, err := client.Get(ctx, &dsrpc.CommonRequest{
-		Key: "/pins/state/dirty",
-	})
-	t.Log(r.GetCode())
-	t.Log(r.GetMsg())
-
-	if err != nil {
-		if r.GetCode() == dsrpc.ErrCode_ErrNotFound {
-			t.Fatal(ds.ErrNotFound)
-			return
-		}
-		t.Fatal(err)
-	}
-
 }

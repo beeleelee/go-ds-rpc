@@ -16,6 +16,7 @@ service KVStore {
 enum ErrCode {
     None = 0;
     ErrNotFound = 1;
+    Others = 100;
 }
 
 message CommonRequest {

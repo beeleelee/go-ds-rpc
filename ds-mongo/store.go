@@ -38,12 +38,13 @@ func (ms *MongoStore) Put(ctx context.Context, req *dsrpc.CommonRequest) (*dsrpc
 	err := ms.client.Put(ctx, storeItem, refItem)
 	if err != nil {
 		r := &dsrpc.CommonReply{
-			Msg: err.Error(),
+			Msg:  err.Error(),
+			Code: dsrpc.ErrCode_Others,
 		}
 		if err == mongo.ErrNoDocuments {
 			r.Code = dsrpc.ErrCode_ErrNotFound
 		}
-		return r, err
+		return r, nil
 	}
 	return &dsrpc.CommonReply{}, nil
 }
@@ -52,12 +53,13 @@ func (ms *MongoStore) Delete(ctx context.Context, req *dsrpc.CommonRequest) (*ds
 	err := ms.client.Delete(ctx, req.GetKey())
 	if err != nil {
 		r := &dsrpc.CommonReply{
-			Msg: err.Error(),
+			Msg:  err.Error(),
+			Code: dsrpc.ErrCode_Others,
 		}
 		if err == mongo.ErrNoDocuments {
 			r.Code = dsrpc.ErrCode_ErrNotFound
 		}
-		return r, err
+		return r, nil
 	}
 	return &dsrpc.CommonReply{}, nil
 }
@@ -65,18 +67,14 @@ func (ms *MongoStore) Delete(ctx context.Context, req *dsrpc.CommonRequest) (*ds
 func (ms *MongoStore) Get(ctx context.Context, req *dsrpc.CommonRequest) (*dsrpc.CommonReply, error) {
 	v, err := ms.client.Get(ctx, req.GetKey())
 	if err != nil {
-		// logging.Info("=====")
-		// logging.Warn(err)
-		// logging.Info("=====")
 		r := &dsrpc.CommonReply{
-			Msg: err.Error(),
+			Msg:  err.Error(),
+			Code: dsrpc.ErrCode_Others,
 		}
 		if err == mongo.ErrNoDocuments {
-			logging.Info("mongo not found")
 			r.Code = dsrpc.ErrCode_ErrNotFound
 		}
-		logging.Infof("%v, %v", r.GetCode(), r.GetMsg())
-		return r, err
+		return r, nil
 	}
 	return &dsrpc.CommonReply{Value: v}, nil
 }
@@ -85,12 +83,13 @@ func (ms *MongoStore) Has(ctx context.Context, req *dsrpc.CommonRequest) (*dsrpc
 	has, err := ms.client.Has(ctx, req.GetKey())
 	if err != nil {
 		r := &dsrpc.CommonReply{
-			Msg: err.Error(),
+			Msg:  err.Error(),
+			Code: dsrpc.ErrCode_Others,
 		}
 		if err == mongo.ErrNoDocuments {
 			r.Code = dsrpc.ErrCode_ErrNotFound
 		}
-		return r, err
+		return r, nil
 	}
 	return &dsrpc.CommonReply{Success: has}, nil
 }
@@ -99,12 +98,13 @@ func (ms *MongoStore) GetSize(ctx context.Context, req *dsrpc.CommonRequest) (*d
 	v, err := ms.client.GetSize(ctx, req.GetKey())
 	if err != nil {
 		r := &dsrpc.CommonReply{
-			Msg: err.Error(),
+			Msg:  err.Error(),
+			Code: dsrpc.ErrCode_Others,
 		}
 		if err == mongo.ErrNoDocuments {
 			r.Code = dsrpc.ErrCode_ErrNotFound
 		}
-		return r, err
+		return r, nil
 	}
 	return &dsrpc.CommonReply{Size: v}, nil
 }
