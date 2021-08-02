@@ -28,6 +28,7 @@ func NewDataStore(client KVStoreClient) (*DataStore, error) {
 }
 
 func (d *DataStore) Put(k ds.Key, value []byte) error {
+	logging.Infof("p put key: %v", k)
 	r, err := d.client.Put(d.ctx, &CommonRequest{
 		Key:   k.String(),
 		Value: value,
@@ -36,12 +37,14 @@ func (d *DataStore) Put(k ds.Key, value []byte) error {
 		return err
 	}
 	if r.GetCode() != ErrCode_None {
+		logging.Warnf("p put err code: %d, msg: %s", r.GetCode(), r.GetMsg())
 		return xerrors.New(r.GetMsg())
 	}
 	return nil
 }
 
 func (d *DataStore) Get(k ds.Key) ([]byte, error) {
+	logging.Infof("p get key: %v", k)
 	r, err := d.client.Get(d.ctx, &CommonRequest{
 		Key: k.String(),
 	})
@@ -58,6 +61,7 @@ func (d *DataStore) Get(k ds.Key) ([]byte, error) {
 }
 
 func (d *DataStore) Has(k ds.Key) (bool, error) {
+	logging.Infof("p has key: %v", k)
 	r, err := d.client.Has(d.ctx, &CommonRequest{
 		Key: k.String(),
 	})
@@ -74,6 +78,7 @@ func (d *DataStore) Has(k ds.Key) (bool, error) {
 }
 
 func (d *DataStore) GetSize(k ds.Key) (int, error) {
+	logging.Infof("p getsize key: %v", k)
 	r, err := d.client.GetSize(d.ctx, &CommonRequest{
 		Key: k.String(),
 	})
@@ -90,6 +95,7 @@ func (d *DataStore) GetSize(k ds.Key) (int, error) {
 }
 
 func (d *DataStore) Delete(k ds.Key) error {
+	logging.Infof("p delete key: %v", k)
 	r, err := d.client.Delete(d.ctx, &CommonRequest{
 		Key: k.String(),
 	})

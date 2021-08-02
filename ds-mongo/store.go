@@ -25,7 +25,9 @@ func NewMongoStore(opts Options) (*MongoStore, error) {
 }
 
 func (ms *MongoStore) Put(ctx context.Context, req *dsrpc.CommonRequest) (*dsrpc.CommonReply, error) {
+	logging.Infof("key: %v", req.GetKey())
 	hk := sha256String(req.GetValue())
+	logging.Infof("v hk %v", hk)
 
 	refItem := &RefItem{
 		ID:  req.GetKey(),
