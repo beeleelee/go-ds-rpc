@@ -5,10 +5,13 @@ import (
 	"sync"
 	"time"
 
+	dsq "github.com/ipfs/go-datastore/query"
 	log "github.com/ipfs/go-log/v2"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"golang.org/x/xerrors"
 )
 
 var logging = log.Logger("dsrpc/dsmongo")
@@ -90,7 +93,7 @@ type RefItem struct {
 	UpdatedAt time.Time `bson:"updated_at" json:"updated_at"`
 }
 
-type storeItemOnlySize struct {
+type refItemOnlySize struct {
 	ID   string `bson:"_id" json:"_id"`
 	Size int64  `bson:"size" json:"size"`
 }
@@ -239,7 +242,6 @@ func (dsm *DSMongo) Has(ctx context.Context, id string) (bool, error) {
 }
 
 func (dsm *DSMongo) GetSize(ctx context.Context, id string) (int64, error) {
-	dstore := dsm.ds()
 	refstore := dsm.refs()
 
 	ref := &RefItem{}
@@ -250,15 +252,81 @@ func (dsm *DSMongo) GetSize(ctx context.Context, id string) (int64, error) {
 		return 0, err
 	}
 
-	b := &storeItemOnlySize{}
-	dsm.RLock()
-	err = dstore.FindOne(ctx, bson.M{"_id": ref.Ref}).Decode(&b)
-	dsm.RUnlock()
-	if err != nil {
-		return 0, err
+	return ref.Size, nil
+}
+
+func (dsm *DSMongo) Query(ctx context.Context, q dsq.Query) (chan *dsq.Entry, error) {
+	if q.Orders != nil || q.Filters != nil {
+		return nil, xerrors.Errorf("dsrpc currently not support orders or filters")
 	}
 
-	return b.Size, nil
+	dstore := dsm.ds()
+	refstore := dsm.refs()
+
+	out := make(chan *dsq.Entry)
+	closeChan := make(chan struct{})
+
+	offset := int64(q.Offset)
+	limit := int64(q.Limit)
+	opts := options.FindOptions{}
+	if offset > 0 {
+		opts.Skip = &offset
+	}
+	if limit > 0 {
+		opts.Limit = &limit
+	}
+
+	dsm.RLock()
+	cur, err := refstore.Find(ctx, bson.E{
+		Key: "_id",
+		Value: bson.M{
+			"$regex": primitive.Regex{Pattern: "^" + q.Prefix, Options: "i"},
+		},
+	}, &opts)
+	dsm.RUnlock()
+	if err != nil {
+		return nil, err
+	}
+
+	go func(ctx context.Context, cur *mongo.Cursor, out chan *dsq.Entry, closeChan chan struct{}) {
+		defer cur.Close(ctx)
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-closeChan:
+				return
+			default:
+				if cur.Next(ctx) {
+					ref := &RefItem{}
+					err := cur.Decode(ref)
+					if err != nil {
+						return
+					}
+					ent := &dsq.Entry{
+						Key:  ref.ID,
+						Size: int(ref.Size),
+					}
+					if !q.KeysOnly {
+						b := &StoreItem{}
+						dsm.RLock()
+						err = dstore.FindOne(ctx, bson.M{"_id": ref.Ref}).Decode(&b)
+						dsm.RUnlock()
+						if err != nil {
+							return
+						}
+						ent.Value = b.Value
+					}
+					out <- ent
+				} else {
+					return
+				}
+			}
+		}
+
+	}(ctx, cur, out, closeChan)
+
+	return out, nil
 }
 
 func (dsm *DSMongo) hasRef(ctx context.Context, id string) (bool, error) {

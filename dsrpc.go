@@ -2,6 +2,7 @@ package dsrpc
 
 import (
 	context "context"
+	"encoding/json"
 
 	ds "github.com/ipfs/go-datastore"
 	dsq "github.com/ipfs/go-datastore/query"
@@ -74,24 +75,22 @@ func (d *DataStore) Has(k ds.Key) (bool, error) {
 }
 
 func (d *DataStore) GetSize(k ds.Key) (int, error) {
-	logging.Infof("p getsize key: %v", k)
 	r, err := d.client.GetSize(d.ctx, &CommonRequest{
 		Key: k.String(),
 	})
 	if err != nil {
-		return 0, err
+		return -1, err
 	}
 	if r.GetCode() != ErrCode_None {
 		if r.GetCode() == ErrCode_ErrNotFound {
-			return 0, ds.ErrNotFound
+			return -1, ds.ErrNotFound
 		}
-		return 0, xerrors.New(r.GetMsg())
+		return -1, xerrors.New(r.GetMsg())
 	}
 	return int(r.GetSize()), nil
 }
 
 func (d *DataStore) Delete(k ds.Key) error {
-	logging.Infof("p delete key: %v", k)
 	r, err := d.client.Delete(d.ctx, &CommonRequest{
 		Key: k.String(),
 	})
@@ -100,7 +99,8 @@ func (d *DataStore) Delete(k ds.Key) error {
 	}
 	if r.GetCode() != ErrCode_None {
 		if r.GetCode() == ErrCode_ErrNotFound {
-			return ds.ErrNotFound
+			//return ds.ErrNotFound
+			return nil
 		}
 		return xerrors.New(r.GetMsg())
 	}
@@ -117,7 +117,41 @@ func (d *DataStore) Close() error {
 }
 
 func (d *DataStore) Query(q dsq.Query) (dsq.Results, error) {
-	return nil, nil
+	b, err := json.Marshal(q)
+	if err != nil {
+		return nil, err
+	}
+	r, err := d.client.Query(d.ctx, &QueryRequest{
+		Q: b,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	nextValue := func() (dsq.Result, bool) {
+		ritem, err := r.Recv()
+		// if err == io.EOF {
+		// 	return dsq.Result{}, false
+		// }
+		if err != nil {
+			return dsq.Result{Error: err}, false
+		}
+
+		ent := dsq.Entry{}
+		err = json.Unmarshal(ritem.GetRes(), &ent)
+		if err != nil {
+			return dsq.Result{Error: err}, false
+		}
+
+		return dsq.Result{Entry: ent}, true
+	}
+
+	return dsq.ResultsFromIterator(q, dsq.Iterator{
+		Close: func() error {
+			return r.CloseSend()
+		},
+		Next: nextValue,
+	}), nil
 }
 
 func (d *DataStore) Batch() (ds.Batch, error) {

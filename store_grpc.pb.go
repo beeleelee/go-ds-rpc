@@ -23,7 +23,7 @@ type KVStoreClient interface {
 	Get(ctx context.Context, in *CommonRequest, opts ...grpc.CallOption) (*CommonReply, error)
 	Has(ctx context.Context, in *CommonRequest, opts ...grpc.CallOption) (*CommonReply, error)
 	GetSize(ctx context.Context, in *CommonRequest, opts ...grpc.CallOption) (*CommonReply, error)
-	Query(ctx context.Context, in *QueryRequest, opts ...grpc.CallOption) (*QueryReply, error)
+	Query(ctx context.Context, in *QueryRequest, opts ...grpc.CallOption) (KVStore_QueryClient, error)
 }
 
 type kVStoreClient struct {
@@ -79,13 +79,36 @@ func (c *kVStoreClient) GetSize(ctx context.Context, in *CommonRequest, opts ...
 	return out, nil
 }
 
-func (c *kVStoreClient) Query(ctx context.Context, in *QueryRequest, opts ...grpc.CallOption) (*QueryReply, error) {
-	out := new(QueryReply)
-	err := c.cc.Invoke(ctx, "/dsrpc.KVStore/Query", in, out, opts...)
+func (c *kVStoreClient) Query(ctx context.Context, in *QueryRequest, opts ...grpc.CallOption) (KVStore_QueryClient, error) {
+	stream, err := c.cc.NewStream(ctx, &KVStore_ServiceDesc.Streams[0], "/dsrpc.KVStore/Query", opts...)
 	if err != nil {
 		return nil, err
 	}
-	return out, nil
+	x := &kVStoreQueryClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type KVStore_QueryClient interface {
+	Recv() (*QueryReply, error)
+	grpc.ClientStream
+}
+
+type kVStoreQueryClient struct {
+	grpc.ClientStream
+}
+
+func (x *kVStoreQueryClient) Recv() (*QueryReply, error) {
+	m := new(QueryReply)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
 }
 
 // KVStoreServer is the server API for KVStore service.
@@ -97,7 +120,7 @@ type KVStoreServer interface {
 	Get(context.Context, *CommonRequest) (*CommonReply, error)
 	Has(context.Context, *CommonRequest) (*CommonReply, error)
 	GetSize(context.Context, *CommonRequest) (*CommonReply, error)
-	Query(context.Context, *QueryRequest) (*QueryReply, error)
+	Query(*QueryRequest, KVStore_QueryServer) error
 	mustEmbedUnimplementedKVStoreServer()
 }
 
@@ -120,8 +143,8 @@ func (UnimplementedKVStoreServer) Has(context.Context, *CommonRequest) (*CommonR
 func (UnimplementedKVStoreServer) GetSize(context.Context, *CommonRequest) (*CommonReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetSize not implemented")
 }
-func (UnimplementedKVStoreServer) Query(context.Context, *QueryRequest) (*QueryReply, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Query not implemented")
+func (UnimplementedKVStoreServer) Query(*QueryRequest, KVStore_QueryServer) error {
+	return status.Errorf(codes.Unimplemented, "method Query not implemented")
 }
 func (UnimplementedKVStoreServer) mustEmbedUnimplementedKVStoreServer() {}
 
@@ -226,22 +249,25 @@ func _KVStore_GetSize_Handler(srv interface{}, ctx context.Context, dec func(int
 	return interceptor(ctx, in, info, handler)
 }
 
-func _KVStore_Query_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(QueryRequest)
-	if err := dec(in); err != nil {
-		return nil, err
+func _KVStore_Query_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(QueryRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
 	}
-	if interceptor == nil {
-		return srv.(KVStoreServer).Query(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/dsrpc.KVStore/Query",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(KVStoreServer).Query(ctx, req.(*QueryRequest))
-	}
-	return interceptor(ctx, in, info, handler)
+	return srv.(KVStoreServer).Query(m, &kVStoreQueryServer{stream})
+}
+
+type KVStore_QueryServer interface {
+	Send(*QueryReply) error
+	grpc.ServerStream
+}
+
+type kVStoreQueryServer struct {
+	grpc.ServerStream
+}
+
+func (x *kVStoreQueryServer) Send(m *QueryReply) error {
+	return x.ServerStream.SendMsg(m)
 }
 
 // KVStore_ServiceDesc is the grpc.ServiceDesc for KVStore service.
@@ -271,11 +297,13 @@ var KVStore_ServiceDesc = grpc.ServiceDesc{
 			MethodName: "GetSize",
 			Handler:    _KVStore_GetSize_Handler,
 		},
+	},
+	Streams: []grpc.StreamDesc{
 		{
-			MethodName: "Query",
-			Handler:    _KVStore_Query_Handler,
+			StreamName:    "Query",
+			Handler:       _KVStore_Query_Handler,
+			ServerStreams: true,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
 	Metadata: "store.proto",
 }

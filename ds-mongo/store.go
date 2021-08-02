@@ -3,9 +3,11 @@ package dsmongo
 import (
 	"context"
 	"crypto/sha256"
+	"encoding/json"
 	"fmt"
 
 	dsrpc "github.com/beeleelee/go-ds-rpc"
+	dsq "github.com/ipfs/go-datastore/query"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -115,9 +117,27 @@ func (ms *MongoStore) GetSize(ctx context.Context, req *dsrpc.CommonRequest) (*d
 	return &dsrpc.CommonReply{Size: v}, nil
 }
 
-func (ms *MongoStore) Query(ctx context.Context, req *dsrpc.QueryRequest) (*dsrpc.QueryReply, error) {
-
-	return &dsrpc.QueryReply{Res: []byte{}}, nil
+func (ms *MongoStore) Query(req *dsrpc.QueryRequest, reply dsrpc.KVStore_QueryServer) error {
+	re := dsq.Query{}
+	err := json.Unmarshal(req.GetQ(), &re)
+	if err != nil {
+		return err
+	}
+	logging.Infof("query: %s", re)
+	items, err := ms.client.Query(context.Background(), re)
+	for ent := range items {
+		b, err := json.Marshal(ent)
+		if err != nil {
+			return err
+		}
+		err = reply.Send(&dsrpc.QueryReply{
+			Res: b,
+		})
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (ms *MongoStore) Close(context.Context) error {

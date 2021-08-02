@@ -10,7 +10,7 @@ service KVStore {
     rpc Get (CommonRequest) returns (CommonReply) {}
     rpc Has (CommonRequest) returns (CommonReply) {}
     rpc GetSize (CommonRequest) returns (CommonReply) {}
-    rpc Query (QueryRequest) returns (QueryReply) {}
+    rpc Query (QueryRequest) returns (stream QueryReply) {}
 }
 
 enum ErrCode {
