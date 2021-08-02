@@ -85,3 +85,21 @@ func TestMongoStore(t *testing.T) {
 	}
 	t.Logf("delete time elapsed: %v", time.Now().Sub(deleteStart))
 }
+
+func TestGet(t *testing.T) {
+	rpc_uri := "127.0.0.1:1520"
+	client, err := dsmongo.NewMongoStoreClient(rpc_uri)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	r, err := client.Get(context.Background(), &dsrpc.CommonRequest{
+		Key: "/pins/state/dirty",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if r.GetCode() != dsrpc.ErrCode_None {
+		t.Fatal(r.GetMsg())
+	}
+}

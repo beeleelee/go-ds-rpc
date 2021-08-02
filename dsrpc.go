@@ -2,7 +2,6 @@ package dsrpc
 
 import (
 	context "context"
-	"fmt"
 
 	ds "github.com/ipfs/go-datastore"
 	dsq "github.com/ipfs/go-datastore/query"
@@ -43,17 +42,17 @@ func (d *DataStore) Put(k ds.Key, value []byte) error {
 }
 
 func (d *DataStore) Get(k ds.Key) ([]byte, error) {
-	fmt.Println("*********")
 	r, err := d.client.Get(d.ctx, &CommonRequest{
 		Key: k.String(),
 	})
 	if err != nil {
-		logging.Error(r.GetCode())
-		logging.Error(r.GetMsg())
+		return nil, err
+	}
+	if r.GetCode() != ErrCode_None {
 		if r.GetCode() == ErrCode_ErrNotFound {
 			return nil, ds.ErrNotFound
 		}
-		return nil, err
+		return nil, xerrors.New(r.GetMsg())
 	}
 	return r.GetValue(), nil
 }
@@ -65,6 +64,12 @@ func (d *DataStore) Has(k ds.Key) (bool, error) {
 	if err != nil {
 		return false, err
 	}
+	if r.GetCode() != ErrCode_None {
+		if r.GetCode() == ErrCode_ErrNotFound {
+			return false, ds.ErrNotFound
+		}
+		return false, xerrors.New(r.GetMsg())
+	}
 	return r.GetSuccess(), nil
 }
 
@@ -73,10 +78,13 @@ func (d *DataStore) GetSize(k ds.Key) (int, error) {
 		Key: k.String(),
 	})
 	if err != nil {
+		return 0, err
+	}
+	if r.GetCode() != ErrCode_None {
 		if r.GetCode() == ErrCode_ErrNotFound {
 			return 0, ds.ErrNotFound
 		}
-		return 0, err
+		return 0, xerrors.New(r.GetMsg())
 	}
 	return int(r.GetSize()), nil
 }
@@ -86,11 +94,15 @@ func (d *DataStore) Delete(k ds.Key) error {
 		Key: k.String(),
 	})
 	if err != nil {
+		return err
+	}
+	if r.GetCode() != ErrCode_None {
 		if r.GetCode() == ErrCode_ErrNotFound {
 			return ds.ErrNotFound
 		}
-		return err
+		return xerrors.New(r.GetMsg())
 	}
+
 	return nil
 }
 
