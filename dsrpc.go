@@ -28,7 +28,6 @@ func NewDataStore(client KVStoreClient) (*DataStore, error) {
 }
 
 func (d *DataStore) Put(k ds.Key, value []byte) error {
-	logging.Infof("p put key: %v", k)
 	r, err := d.client.Put(d.ctx, &CommonRequest{
 		Key:   k.String(),
 		Value: value,
@@ -37,14 +36,12 @@ func (d *DataStore) Put(k ds.Key, value []byte) error {
 		return err
 	}
 	if r.GetCode() != ErrCode_None {
-		logging.Warnf("p put err code: %d, msg: %s", r.GetCode(), r.GetMsg())
 		return xerrors.New(r.GetMsg())
 	}
 	return nil
 }
 
 func (d *DataStore) Get(k ds.Key) ([]byte, error) {
-	logging.Infof("p get key: %v", k)
 	r, err := d.client.Get(d.ctx, &CommonRequest{
 		Key: k.String(),
 	})
@@ -61,7 +58,6 @@ func (d *DataStore) Get(k ds.Key) ([]byte, error) {
 }
 
 func (d *DataStore) Has(k ds.Key) (bool, error) {
-	logging.Infof("p has key: %v", k)
 	r, err := d.client.Has(d.ctx, &CommonRequest{
 		Key: k.String(),
 	})
@@ -70,7 +66,7 @@ func (d *DataStore) Has(k ds.Key) (bool, error) {
 	}
 	if r.GetCode() != ErrCode_None {
 		if r.GetCode() == ErrCode_ErrNotFound {
-			return false, ds.ErrNotFound
+			return false, nil
 		}
 		return false, xerrors.New(r.GetMsg())
 	}

@@ -25,7 +25,7 @@ func NewMongoStore(opts Options) (*MongoStore, error) {
 }
 
 func (ms *MongoStore) Put(ctx context.Context, req *dsrpc.CommonRequest) (*dsrpc.CommonReply, error) {
-	logging.Infof("key: %v", req.GetKey())
+	logging.Infof("put key: %v", req.GetKey())
 	hk := sha256String(req.GetValue())
 	logging.Infof("v hk %v", hk)
 
@@ -52,6 +52,7 @@ func (ms *MongoStore) Put(ctx context.Context, req *dsrpc.CommonRequest) (*dsrpc
 }
 
 func (ms *MongoStore) Delete(ctx context.Context, req *dsrpc.CommonRequest) (*dsrpc.CommonReply, error) {
+	logging.Infof("delete key: %v", req.GetKey())
 	err := ms.client.Delete(ctx, req.GetKey())
 	if err != nil {
 		r := &dsrpc.CommonReply{
@@ -67,6 +68,7 @@ func (ms *MongoStore) Delete(ctx context.Context, req *dsrpc.CommonRequest) (*ds
 }
 
 func (ms *MongoStore) Get(ctx context.Context, req *dsrpc.CommonRequest) (*dsrpc.CommonReply, error) {
+	logging.Infof("get key: %v", req.GetKey())
 	v, err := ms.client.Get(ctx, req.GetKey())
 	if err != nil {
 		r := &dsrpc.CommonReply{
@@ -82,6 +84,7 @@ func (ms *MongoStore) Get(ctx context.Context, req *dsrpc.CommonRequest) (*dsrpc
 }
 
 func (ms *MongoStore) Has(ctx context.Context, req *dsrpc.CommonRequest) (*dsrpc.CommonReply, error) {
+	logging.Infof("has key: %v", req.GetKey())
 	has, err := ms.client.Has(ctx, req.GetKey())
 	if err != nil {
 		r := &dsrpc.CommonReply{
@@ -97,6 +100,7 @@ func (ms *MongoStore) Has(ctx context.Context, req *dsrpc.CommonRequest) (*dsrpc
 }
 
 func (ms *MongoStore) GetSize(ctx context.Context, req *dsrpc.CommonRequest) (*dsrpc.CommonReply, error) {
+	logging.Infof("get size key: %v", req.GetKey())
 	v, err := ms.client.GetSize(ctx, req.GetKey())
 	if err != nil {
 		r := &dsrpc.CommonReply{
