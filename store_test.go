@@ -3,6 +3,7 @@ package dsrpc_test
 import (
 	"context"
 	"encoding/json"
+	"io"
 	"testing"
 	"time"
 
@@ -88,31 +89,31 @@ func TestMongoStore(t *testing.T) {
 	t.Logf("delete time elapsed: %v", time.Now().Sub(deleteStart))
 }
 
-// func TestGet(t *testing.T) {
-// 	rpc_uri := "127.0.0.1:1520"
-// 	client, err := dsmongo.NewMongoStoreClient(rpc_uri)
-// 	if err != nil {
-// 		t.Fatal(err)
-// 	}
+func TestGet(t *testing.T) {
+	rpc_uri := "127.0.0.1:1520"
+	client, err := dsmongo.NewMongoStoreClient(rpc_uri)
+	if err != nil {
+		t.Fatal(err)
+	}
 
-// 	// r, err := client.Get(context.Background(), &dsrpc.CommonRequest{
-// 	// 	Key: "/pins/state/dirty",
-// 	// })
-// 	// if err != nil {
-// 	// 	t.Fatal(err)
-// 	// }
-// 	// if r.GetCode() != dsrpc.ErrCode_None {
-// 	// 	t.Fatal(r.GetMsg())
-// 	// }
+	// r, err := client.Get(context.Background(), &dsrpc.CommonRequest{
+	// 	Key: "/pins/state/dirty",
+	// })
+	// if err != nil {
+	// 	t.Fatal(err)
+	// }
+	// if r.GetCode() != dsrpc.ErrCode_None {
+	// 	t.Fatal(r.GetMsg())
+	// }
 
-// 	_, err = client.Put(context.Background(), &dsrpc.CommonRequest{
-// 		Key:   "/local/filesroot",
-// 		Value: []byte("test data"),
-// 	})
-// 	if err != nil {
-// 		t.Fatal(err)
-// 	}
-// }
+	_, err = client.Put(context.Background(), &dsrpc.CommonRequest{
+		Key:   "/local/filesroot",
+		Value: []byte("test data"),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+}
 
 func TestQuery(t *testing.T) {
 	rpc_uri := "127.0.0.1:1520"
@@ -121,7 +122,7 @@ func TestQuery(t *testing.T) {
 		t.Fatal(err)
 	}
 	q := &dsq.Query{
-		Prefix: ".*",
+		Prefix: "/local",
 	}
 	qb, err := json.Marshal(q)
 	if err != nil {
@@ -136,6 +137,9 @@ func TestQuery(t *testing.T) {
 	for {
 		qre, err := r.Recv()
 		if err != nil {
+			if err == io.EOF {
+				break
+			}
 			t.Fatal(err)
 		}
 		ent := dsq.Entry{}
