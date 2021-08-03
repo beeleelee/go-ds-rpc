@@ -112,8 +112,10 @@ func (ms *MongoStore) GetSize(ctx context.Context, req *dsrpc.CommonRequest) (*d
 		if err == mongo.ErrNoDocuments {
 			r.Code = dsrpc.ErrCode_ErrNotFound
 		}
+		logging.Infof("get size error, code: %v, msg: %v", r.GetCode(), r.GetMsg())
 		return r, nil
 	}
+	logging.Infof("get size: %v", v)
 	return &dsrpc.CommonReply{Size: v}, nil
 }
 
@@ -125,6 +127,9 @@ func (ms *MongoStore) Query(req *dsrpc.QueryRequest, reply dsrpc.KVStore_QuerySe
 	}
 	logging.Infof("query: %s", re)
 	items, err := ms.client.Query(context.Background(), re)
+	if err != nil {
+		return err
+	}
 	for ent := range items {
 		b, err := json.Marshal(ent)
 		if err != nil {

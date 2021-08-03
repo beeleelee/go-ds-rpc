@@ -260,69 +260,98 @@ func (dsm *DSMongo) Query(ctx context.Context, q dsq.Query) (chan *dsq.Entry, er
 		return nil, xerrors.Errorf("dsrpc currently not support orders or filters")
 	}
 
-	dstore := dsm.ds()
+	//dstore := dsm.ds()
 	refstore := dsm.refs()
 
 	out := make(chan *dsq.Entry)
 	closeChan := make(chan struct{})
 
-	offset := int64(q.Offset)
-	limit := int64(q.Limit)
-	opts := options.FindOptions{}
-	if offset > 0 {
-		opts.Skip = &offset
-	}
-	if limit > 0 {
-		opts.Limit = &limit
-	}
+	// offset := int64(q.Offset)
+	// limit := int64(q.Limit)
+	// opts := options.FindOptions{}
+	// if offset > 0 {
+	// 	opts.Skip = &offset
+	// }
+	// if limit > 0 {
+	// 	opts.Limit = &limit
+	// }
 
+	rge := primitive.Regex{Pattern: q.Prefix, Options: "i"}
+	logging.Info(rge.String())
 	dsm.RLock()
-	cur, err := refstore.Find(ctx, bson.E{
-		Key: "_id",
-		Value: bson.M{
-			"$regex": primitive.Regex{Pattern: "^" + q.Prefix, Options: "i"},
-		},
-	}, &opts)
+	logging.Info("rlock")
+	cur, err := refstore.Find(ctx, bson.M{
+		"_id": primitive.Regex{Pattern: q.Prefix, Options: "i"},
+	})
 	dsm.RUnlock()
+	logging.Info("un rlock")
 	if err != nil {
+		logging.Warn(err)
 		return nil, err
+	}
+	logging.Info("get mongo cursor")
+
+	logging.Infof("cur next: %v", cur.Next(ctx))
+
+	refList := make([]*RefItem, 0)
+	for cur.Next(ctx) {
+		ref := &RefItem{}
+		err := cur.Decode(ref)
+		if err != nil {
+			return nil, err
+		}
+		logging.Infof("%v", *ref)
+		refList = append(refList, ref)
 	}
 
 	go func(ctx context.Context, cur *mongo.Cursor, out chan *dsq.Entry, closeChan chan struct{}) {
 		defer cur.Close(ctx)
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case <-closeChan:
-				return
-			default:
-				if cur.Next(ctx) {
-					ref := &RefItem{}
-					err := cur.Decode(ref)
-					if err != nil {
-						return
-					}
-					ent := &dsq.Entry{
-						Key:  ref.ID,
-						Size: int(ref.Size),
-					}
-					if !q.KeysOnly {
-						b := &StoreItem{}
-						dsm.RLock()
-						err = dstore.FindOne(ctx, bson.M{"_id": ref.Ref}).Decode(&b)
-						dsm.RUnlock()
-						if err != nil {
-							return
-						}
-						ent.Value = b.Value
-					}
-					out <- ent
-				} else {
-					return
-				}
-			}
+		if len(refList) == 0 {
+			close(out)
+			return
 		}
+		for _, ref := range refList {
+			ent := &dsq.Entry{
+				Key:  ref.ID,
+				Size: int(ref.Size),
+			}
+			out <- ent
+		}
+		close(out)
+		//defer cur.Close(ctx)
+		// for {
+		// 	select {
+		// 	case <-ctx.Done():
+		// 		return
+		// 	case <-closeChan:
+		// 		return
+		// 	default:
+		// 		// if cur.Next(ctx) {
+		// 		// 	ref := &RefItem{}
+		// 		// 	err := cur.Decode(ref)
+		// 		// 	if err != nil {
+		// 		// 		return
+		// 		// 	}
+		// 		// 	ent := &dsq.Entry{
+		// 		// 		Key:  ref.ID,
+		// 		// 		Size: int(ref.Size),
+		// 		// 	}
+		// 		// 	if !q.KeysOnly {
+		// 		// 		b := &StoreItem{}
+		// 		// 		dsm.RLock()
+		// 		// 		err = dstore.FindOne(ctx, bson.M{"_id": ref.Ref}).Decode(&b)
+		// 		// 		dsm.RUnlock()
+		// 		// 		if err != nil {
+		// 		// 			return
+		// 		// 		}
+		// 		// 		ent.Value = b.Value
+		// 		// 	}
+		// 		// 	out <- ent
+		// 		// } else {
+		// 		// 	return
+		// 		// }
+		// 	}
+		// }
 
 	}(ctx, cur, out, closeChan)
 

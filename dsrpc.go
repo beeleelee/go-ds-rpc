@@ -125,6 +125,7 @@ func (d *DataStore) Query(q dsq.Query) (dsq.Results, error) {
 		Q: b,
 	})
 	if err != nil {
+		r.CloseSend()
 		return nil, err
 	}
 

@@ -2,6 +2,7 @@ package dsrpc_test
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 	"time"
 
@@ -9,6 +10,7 @@ import (
 
 	dsrpc "github.com/beeleelee/go-ds-rpc"
 	dsmongo "github.com/beeleelee/go-ds-rpc/ds-mongo"
+	dsq "github.com/ipfs/go-datastore/query"
 	dag "github.com/ipfs/go-merkledag"
 )
 
@@ -111,3 +113,37 @@ func TestMongoStore(t *testing.T) {
 // 		t.Fatal(err)
 // 	}
 // }
+
+func TestQuery(t *testing.T) {
+	rpc_uri := "127.0.0.1:1520"
+	client, err := dsmongo.NewMongoStoreClient(rpc_uri)
+	if err != nil {
+		t.Fatal(err)
+	}
+	q := &dsq.Query{
+		Prefix: ".*",
+	}
+	qb, err := json.Marshal(q)
+	if err != nil {
+		t.Fatal(err)
+	}
+	r, err := client.Query(context.TODO(), &dsrpc.QueryRequest{
+		Q: qb,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for {
+		qre, err := r.Recv()
+		if err != nil {
+			t.Fatal(err)
+		}
+		ent := dsq.Entry{}
+		err = json.Unmarshal(qre.GetRes(), &ent)
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Log(ent.Key, ent.Size)
+	}
+
+}

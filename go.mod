@@ -4,8 +4,10 @@ go 1.15
 
 require (
 	github.com/dgraph-io/ristretto v0.0.4-0.20210122082011-bb5d392ed82d // indirect
+	github.com/ipfs/go-cid v0.0.7
 	github.com/ipfs/go-datastore v0.4.6
 	github.com/ipfs/go-ipfs v0.9.1
+	github.com/ipfs/go-ipfs-ds-help v0.1.1
 	github.com/ipfs/go-log/v2 v2.3.0
 	github.com/ipfs/go-merkledag v0.3.2
 	go.mongodb.org/mongo-driver v1.6.0
