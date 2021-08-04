@@ -16,21 +16,23 @@ var _ ds.Batching = (*DataStore)(nil)
 type DataStore struct {
 	ctx    context.Context
 	client KVStoreClient
+	prefix ds.Key
 }
 
-func NewDataStore(client KVStoreClient) (*DataStore, error) {
+func NewDataStore(prefix string, client KVStoreClient) (*DataStore, error) {
 	if client == nil {
 		return nil, xerrors.New("missing KVStoreClient instance")
 	}
 	return &DataStore{
 		client: client,
 		ctx:    context.Background(),
+		prefix: ds.NewKey(prefix),
 	}, nil
 }
 
 func (d *DataStore) Put(k ds.Key, value []byte) error {
 	r, err := d.client.Put(d.ctx, &CommonRequest{
-		Key:   k.String(),
+		Key:   d.prefix.String() + k.String(),
 		Value: value,
 	})
 	if err != nil {
@@ -44,7 +46,7 @@ func (d *DataStore) Put(k ds.Key, value []byte) error {
 
 func (d *DataStore) Get(k ds.Key) ([]byte, error) {
 	r, err := d.client.Get(d.ctx, &CommonRequest{
-		Key: k.String(),
+		Key: d.prefix.String() + k.String(),
 	})
 	if err != nil {
 		return nil, err
@@ -60,7 +62,7 @@ func (d *DataStore) Get(k ds.Key) ([]byte, error) {
 
 func (d *DataStore) Has(k ds.Key) (bool, error) {
 	r, err := d.client.Has(d.ctx, &CommonRequest{
-		Key: k.String(),
+		Key: d.prefix.String() + k.String(),
 	})
 	if err != nil {
 		return false, err
@@ -76,7 +78,7 @@ func (d *DataStore) Has(k ds.Key) (bool, error) {
 
 func (d *DataStore) GetSize(k ds.Key) (int, error) {
 	r, err := d.client.GetSize(d.ctx, &CommonRequest{
-		Key: k.String(),
+		Key: d.prefix.String() + k.String(),
 	})
 	if err != nil {
 		return -1, err
@@ -92,7 +94,7 @@ func (d *DataStore) GetSize(k ds.Key) (int, error) {
 
 func (d *DataStore) Delete(k ds.Key) error {
 	r, err := d.client.Delete(d.ctx, &CommonRequest{
-		Key: k.String(),
+		Key: d.prefix.String() + k.String(),
 	})
 	if err != nil {
 		return err
@@ -117,6 +119,7 @@ func (d *DataStore) Close() error {
 }
 
 func (d *DataStore) Query(q dsq.Query) (dsq.Results, error) {
+	q.Prefix = d.prefix.String() + q.Prefix
 	b, err := json.Marshal(q)
 	if err != nil {
 		return nil, err

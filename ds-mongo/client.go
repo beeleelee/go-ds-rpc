@@ -16,7 +16,7 @@ func NewMongoStoreClient(srv string) (*MongoStoreClient, error) {
 	if srv == "" {
 		logging.Fatal("mongostore rpc server address is missing")
 	}
-	conn, err := grpc.Dial(srv, grpc.WithInsecure())
+	conn, err := grpc.Dial(srv, grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
 		return nil, err
 	}

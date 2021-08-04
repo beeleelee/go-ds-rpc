@@ -37,7 +37,8 @@ func (*mongodsPlugin) DatastoreTypeName() string {
 }
 
 type datastoreConfig struct {
-	uri string
+	uri    string
+	prefix string
 }
 
 func (*mongodsPlugin) DatastoreConfigParser() fsrepo.ConfigFromMap {
@@ -49,14 +50,19 @@ func (*mongodsPlugin) DatastoreConfigParser() fsrepo.ConfigFromMap {
 		if !ok {
 			return nil, fmt.Errorf("'uri' field is missing or not string")
 		}
+		c.prefix, ok = params["prefix"].(string)
+		if !ok {
+			return nil, fmt.Errorf("'prefix' field is missing or not string")
+		}
 		return &c, nil
 	}
 }
 
 func (c *datastoreConfig) DiskSpec() fsrepo.DiskSpec {
 	return map[string]interface{}{
-		"type": "mongods",
-		"uri":  c.uri,
+		"type":   "mongods",
+		"uri":    c.uri,
+		"prefix": c.prefix,
 	}
 }
 
@@ -65,5 +71,5 @@ func (c *datastoreConfig) Create(path string) (repo.Datastore, error) {
 	if err != nil {
 		return nil, err
 	}
-	return dsrpc.NewDataStore(client)
+	return dsrpc.NewDataStore(c.prefix, client)
 }
