@@ -112,10 +112,10 @@ func (ms *MongoStore) GetSize(ctx context.Context, req *dsrpc.CommonRequest) (*d
 		if err == mongo.ErrNoDocuments {
 			r.Code = dsrpc.ErrCode_ErrNotFound
 		}
-		logging.Infof("get size error, code: %v, msg: %v", r.GetCode(), r.GetMsg())
+		//logging.Infof("get size error, code: %v, msg: %v", r.GetCode(), r.GetMsg())
 		return r, nil
 	}
-	logging.Infof("get size: %v", v)
+
 	return &dsrpc.CommonReply{Size: v}, nil
 }
 

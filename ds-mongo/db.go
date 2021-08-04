@@ -89,6 +89,7 @@ type RefItem struct {
 	ID        string    `bson:"_id" json:"_id"` // key
 	Ref       string    `bson:"ref" json:"ref"` // value
 	Size      int64     `bson:"size" json:"size"`
+	NID       []string  `bson:"nid" json:"nid"`
 	CreatedAt time.Time `bson:"created_at" json:"created_at"`
 	UpdatedAt time.Time `bson:"updated_at" json:"updated_at"`
 }
