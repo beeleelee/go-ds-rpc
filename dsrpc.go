@@ -3,6 +3,7 @@ package dsrpc
 import (
 	context "context"
 	"encoding/json"
+	"strings"
 
 	ds "github.com/ipfs/go-datastore"
 	dsq "github.com/ipfs/go-datastore/query"
@@ -146,7 +147,7 @@ func (d *DataStore) Query(q dsq.Query) (dsq.Results, error) {
 		if err != nil {
 			return dsq.Result{Error: err}, false
 		}
-
+		ent.Key = strings.TrimPrefix(ent.Key, d.prefix.String())
 		return dsq.Result{Entry: ent}, true
 	}
 
