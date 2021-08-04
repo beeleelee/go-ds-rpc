@@ -135,8 +135,7 @@ func (dsm *DSMongo) Put(ctx context.Context, item *StoreItem, ref *RefItem) erro
 	if err == nil { // 数据块已存在，只需更新引用计数
 		dsm.Lock()
 		_, err := dstore.UpdateByID(ctx, item.ID, bson.M{
-			"ref_count":  refCount.RefCount + 1,
-			"updated_at": time.Now(),
+			"$set": bson.M{"ref_count": refCount.RefCount + 1, "updated_at": time.Now()},
 		})
 		dsm.Unlock()
 		if err != nil {
@@ -309,6 +308,7 @@ func (dsm *DSMongo) Query(ctx context.Context, q dsq.Query) (chan *dsq.Entry, er
 
 	go func(ctx context.Context, cur *mongo.Cursor, out chan *dsq.Entry, closeChan chan struct{}) {
 		defer cur.Close(ctx)
+		defer close(out)
 		// if len(refList) == 0 {
 		// 	close(out)
 		// 	return
@@ -321,19 +321,19 @@ func (dsm *DSMongo) Query(ctx context.Context, q dsq.Query) (chan *dsq.Entry, er
 		// 	out <- ent
 		// }
 		// close(out)
-	loop:
+
 		for {
 			select {
 			case <-ctx.Done():
-				break loop
+				return
 			case <-closeChan:
-				break loop
+				return
 			default:
 				if cur.Next(ctx) {
 					ref := &RefItem{}
 					err := cur.Decode(ref)
 					if err != nil {
-						break loop
+						return
 					}
 					ent := &dsq.Entry{
 						Key:  ref.ID,
@@ -345,17 +345,16 @@ func (dsm *DSMongo) Query(ctx context.Context, q dsq.Query) (chan *dsq.Entry, er
 						err = dstore.FindOne(ctx, bson.M{"_id": ref.Ref}).Decode(&b)
 						dsm.RUnlock()
 						if err != nil {
-							break loop
+							return
 						}
 						ent.Value = b.Value
 					}
-					logging.Info(ent)
+					logging.Infof("key: %v, size: %v", ent.Key, ent.Size)
 					out <- ent
 				} else {
-					break loop
+					return
 				}
 			}
-			close(out)
 		}
 
 	}(ctx, cur, out, closeChan)

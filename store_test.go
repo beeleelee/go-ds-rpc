@@ -122,7 +122,7 @@ func TestQuery(t *testing.T) {
 		t.Fatal(err)
 	}
 	q := &dsq.Query{
-		Prefix: "/local",
+		Prefix: "/blocks/CI",
 	}
 	qb, err := json.Marshal(q)
 	if err != nil {
