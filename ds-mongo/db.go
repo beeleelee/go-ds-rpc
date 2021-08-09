@@ -162,11 +162,11 @@ func (dsm *DSMongo) Put(ctx context.Context, item *StoreItem, ref *RefItem) erro
 	logging.Info(*ref)
 	dsm.Lock()
 	defer dsm.Unlock()
-	r, err := refstore.InsertOne(ctx, ref)
+	_, err = refstore.InsertOne(ctx, ref)
 	if err != nil {
 		return err
 	}
-	logging.Infof("mdb inserted id: %v", r.InsertedID)
+	//logging.Infof("mdb inserted id: %v", r.InsertedID)
 	return nil
 }
 
