@@ -27,7 +27,7 @@ var (
 )
 
 func init() {
-	log.SetLogLevel("*", "info")
+	log.SetLogLevel("*", "error")
 }
 
 func main() {
