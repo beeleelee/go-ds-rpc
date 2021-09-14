@@ -2,7 +2,6 @@ package dsmongo
 
 import (
 	"context"
-	"sync"
 	"time"
 
 	dsq "github.com/ipfs/go-datastore/query"
@@ -41,7 +40,6 @@ func DefaultOptions() Options {
 type DSMongo struct {
 	client *mongo.Client
 	opts   Options
-	sync.RWMutex
 }
 
 func NewDSMongo(opts Options) (*DSMongo, error) {
@@ -94,10 +92,10 @@ type RefItem struct {
 	UpdatedAt time.Time `bson:"updated_at" json:"updated_at"`
 }
 
-type refItemOnlySize struct {
-	ID   string `bson:"_id" json:"_id"`
-	Size int64  `bson:"size" json:"size"`
-}
+// type refItemOnlySize struct {
+// 	ID   string `bson:"_id" json:"_id"`
+// 	Size int64  `bson:"size" json:"size"`
+// }
 
 type onlyRefCount struct {
 	RefCount int `bson:"ref_count" json:"ref_count"`
@@ -127,18 +125,14 @@ func (dsm *DSMongo) Put(ctx context.Context, item *StoreItem, ref *RefItem) erro
 
 	// 再看 blocks 里是否有记录
 	refCount := &onlyRefCount{}
-	dsm.RLock()
 	err := dstore.FindOne(ctx, bson.M{"_id": item.ID}).Decode(refCount)
-	dsm.RUnlock()
 	if err != nil && err != mongo.ErrNoDocuments {
 		return err
 	}
 	if err == nil { // 数据块已存在，只需更新引用计数
-		dsm.Lock()
 		_, err := dstore.UpdateByID(ctx, item.ID, bson.M{
 			"$set": bson.M{"ref_count": refCount.RefCount + 1, "updated_at": time.Now()},
 		})
-		dsm.Unlock()
 		if err != nil {
 			return err
 		}
@@ -146,9 +140,7 @@ func (dsm *DSMongo) Put(ctx context.Context, item *StoreItem, ref *RefItem) erro
 		item.RefCount = 1
 		item.CreatedAt = time.Now()
 		item.UpdatedAt = item.CreatedAt
-		dsm.Lock()
 		_, err := dstore.InsertOne(ctx, item)
-		dsm.Unlock()
 		if err != nil {
 			return err
 		}
@@ -160,8 +152,6 @@ func (dsm *DSMongo) Put(ctx context.Context, item *StoreItem, ref *RefItem) erro
 	ref.UpdatedAt = item.CreatedAt
 	ref.Ref = item.ID
 	logging.Info(*ref)
-	dsm.Lock()
-	defer dsm.Unlock()
 	_, err = refstore.InsertOne(ctx, ref)
 	if err != nil {
 		return err
@@ -177,9 +167,7 @@ func (dsm *DSMongo) Delete(ctx context.Context, id string) error {
 	var err error
 	refItem := &RefItem{}
 
-	dsm.RLock()
 	err = refstore.FindOne(ctx, bson.M{"_id": id}).Decode(refItem)
-	dsm.RUnlock()
 	if err != nil {
 		// if err == mongo.ErrNoDocuments {
 		// 	return nil
@@ -221,9 +209,7 @@ func (dsm *DSMongo) Get(ctx context.Context, id string) ([]byte, error) {
 	refstore := dsm.refs()
 
 	ref := &RefItem{}
-	dsm.RLock()
 	err := refstore.FindOne(ctx, bson.M{"_id": id}).Decode(ref)
-	dsm.RUnlock()
 	if err != nil {
 		return nil, err
 	}
@@ -245,9 +231,7 @@ func (dsm *DSMongo) GetSize(ctx context.Context, id string) (int64, error) {
 	refstore := dsm.refs()
 
 	ref := &RefItem{}
-	dsm.RLock()
 	err := refstore.FindOne(ctx, bson.M{"_id": id}).Decode(&ref)
-	dsm.RUnlock()
 	if err != nil {
 		return 0, err
 	}
@@ -278,7 +262,6 @@ func (dsm *DSMongo) Query(ctx context.Context, q dsq.Query) (chan *dsq.Entry, er
 
 	rge := primitive.Regex{Pattern: q.Prefix, Options: "i"}
 	logging.Info(rge.String())
-	dsm.RLock()
 	logging.Info("rlock")
 	cur, err := refstore.Find(ctx, bson.M{
 		"_id": primitive.Regex{
@@ -286,7 +269,6 @@ func (dsm *DSMongo) Query(ctx context.Context, q dsq.Query) (chan *dsq.Entry, er
 			Options: "i",
 		},
 	}, &opts)
-	dsm.RUnlock()
 	logging.Info("un rlock")
 	if err != nil {
 		logging.Warn(err)
@@ -342,9 +324,7 @@ func (dsm *DSMongo) Query(ctx context.Context, q dsq.Query) (chan *dsq.Entry, er
 					}
 					if !q.KeysOnly {
 						b := &StoreItem{}
-						dsm.RLock()
 						err = dstore.FindOne(ctx, bson.M{"_id": ref.Ref}).Decode(&b)
-						dsm.RUnlock()
 						if err != nil {
 							return
 						}
@@ -366,8 +346,6 @@ func (dsm *DSMongo) Query(ctx context.Context, q dsq.Query) (chan *dsq.Entry, er
 func (dsm *DSMongo) hasRef(ctx context.Context, id string) (bool, error) {
 	refstore := dsm.refs()
 
-	dsm.RLock()
-	defer dsm.RUnlock()
 	err := refstore.FindOne(ctx, bson.M{"_id": id}).Err()
 
 	if err != nil {
@@ -377,16 +355,14 @@ func (dsm *DSMongo) hasRef(ctx context.Context, id string) (bool, error) {
 	return true, nil
 }
 
-func (dsm *DSMongo) hasBlock(ctx context.Context, id string) (bool, error) {
-	dstore := dsm.ds()
+// func (dsm *DSMongo) hasBlock(ctx context.Context, id string) (bool, error) {
+// 	dstore := dsm.ds()
 
-	dsm.RLock()
-	defer dsm.RUnlock()
-	err := dstore.FindOne(ctx, bson.M{"_id": id}).Err()
+// 	err := dstore.FindOne(ctx, bson.M{"_id": id}).Err()
 
-	if err != nil {
-		return false, err
-	}
+// 	if err != nil {
+// 		return false, err
+// 	}
 
-	return true, nil
-}
+// 	return true, nil
+// }
