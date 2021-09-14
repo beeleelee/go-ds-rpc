@@ -76,11 +76,10 @@ func NewDSMongo(opts Options) (*DSMongo, error) {
 }
 
 type StoreItem struct {
-	ID        string    `bson:"_id" json:"_id"`     // sha256 hash
-	Value     []byte    `bson:"value" json:"value"` // value
-	RefCount  int       `bson:"ref_count" json:"ref_count"`
+	ID        string    `bson:"_id" json:"_id"`             // sha256 hash
+	Value     []byte    `bson:"value" json:"value"`         // value
+	RefCount  int       `bson:"ref_count" json:"ref_count"` // deprecated
 	CreatedAt time.Time `bson:"created_at" json:"created_at"`
-	UpdatedAt time.Time `bson:"updated_at" json:"updated_at"`
 }
 
 type RefItem struct {
@@ -89,7 +88,6 @@ type RefItem struct {
 	Size      int64     `bson:"size" json:"size"`
 	NID       []string  `bson:"nid" json:"nid"`
 	CreatedAt time.Time `bson:"created_at" json:"created_at"`
-	UpdatedAt time.Time `bson:"updated_at" json:"updated_at"`
 }
 
 // type refItemOnlySize struct {
@@ -127,17 +125,9 @@ func (dsm *DSMongo) Put(ctx context.Context, item *StoreItem, ref *RefItem) erro
 	if err != nil && err != mongo.ErrNoDocuments {
 		return err
 	}
-	if err == nil { // 数据块已存在，只需更新引用计数
-		_, err := dstore.UpdateByID(ctx, item.ID, bson.M{
-			"$set": bson.M{"ref_count": refCount.RefCount + 1, "updated_at": time.Now()},
-		})
-		if err != nil {
-			return err
-		}
-	} else { // 初次保存数据块
+	if err == mongo.ErrNoDocuments { // 初次保存数据块
 		item.RefCount = 1
 		item.CreatedAt = time.Now()
-		item.UpdatedAt = item.CreatedAt
 		_, err := dstore.InsertOne(ctx, item)
 		if err != nil {
 			return err
@@ -148,7 +138,6 @@ func (dsm *DSMongo) Put(ctx context.Context, item *StoreItem, ref *RefItem) erro
 	if !hasref {
 		ref.Size = int64(len(item.Value))
 		ref.CreatedAt = time.Now()
-		ref.UpdatedAt = ref.CreatedAt
 		ref.Ref = item.ID
 		_, err = refstore.InsertOne(ctx, ref)
 		if err != nil {
@@ -174,33 +163,27 @@ func (dsm *DSMongo) Delete(ctx context.Context, id string) error {
 		// }
 		return err
 	}
-	blockId := refItem.Ref
+
 	// 删除 refstore 上的记录
 	_, err = refstore.DeleteOne(ctx, bson.M{"_id": id})
 	if err != nil {
 		return err
 	}
 
-	refCount := &onlyRefCount{}
-	// dstore 引用计数减一
-	err = dstore.FindOne(ctx, bson.M{"_id": blockId}).Decode(refCount)
+	// 查看是否有其他针对数据块的引用
+	rc, err := refstore.CountDocuments(ctx, bson.M{"ref": refItem.Ref})
 	if err != nil {
 		return err
 	}
-	rc := refCount.RefCount - 1
+
 	if rc < 1 { // 不再被引用 删除数据
-		_, err = dstore.DeleteOne(ctx, bson.M{"_id": blockId})
+		_, err = dstore.DeleteOne(ctx, bson.M{"_id": refItem.Ref})
 		if err != nil {
 			return err
 		}
 		return nil
 	}
-	_, err = dstore.UpdateByID(ctx, blockId, bson.M{
-		"$set": bson.M{"ref_count": rc, "updated_at": time.Now()},
-	})
-	if err != nil {
-		return err
-	}
+
 	return nil
 }
 
@@ -213,9 +196,8 @@ func (dsm *DSMongo) Get(ctx context.Context, id string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	blockId := ref.Ref
 	b := &StoreItem{}
-	err = dstore.FindOne(ctx, bson.M{"_id": blockId}).Decode(b)
+	err = dstore.FindOne(ctx, bson.M{"_id": ref.Ref}).Decode(b)
 	if err != nil {
 		return nil, err
 	}
