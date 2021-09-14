@@ -119,9 +119,7 @@ func (dsm *DSMongo) Put(ctx context.Context, item *StoreItem, ref *RefItem) erro
 	refstore := dsm.refs()
 
 	// 先看 refs 里是否存在记录
-	if hasRef, _ := dsm.hasRef(ctx, ref.ID); hasRef {
-		return nil
-	}
+	hasref, _ := dsm.hasRef(ctx, ref.ID)
 
 	// 再看 blocks 里是否有记录
 	refCount := &onlyRefCount{}
@@ -147,15 +145,17 @@ func (dsm *DSMongo) Put(ctx context.Context, item *StoreItem, ref *RefItem) erro
 	}
 
 	// 保存引用
-	ref.Size = int64(len(item.Value))
-	ref.CreatedAt = time.Now()
-	ref.UpdatedAt = item.CreatedAt
-	ref.Ref = item.ID
-	logging.Info(*ref)
-	_, err = refstore.InsertOne(ctx, ref)
-	if err != nil {
-		return err
+	if !hasref {
+		ref.Size = int64(len(item.Value))
+		ref.CreatedAt = time.Now()
+		ref.UpdatedAt = ref.CreatedAt
+		ref.Ref = item.ID
+		_, err = refstore.InsertOne(ctx, ref)
+		if err != nil {
+			return err
+		}
 	}
+
 	//logging.Infof("mdb inserted id: %v", r.InsertedID)
 	return nil
 }
