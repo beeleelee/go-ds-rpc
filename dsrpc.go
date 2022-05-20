@@ -11,12 +11,13 @@ import (
 )
 
 var logging = log.Logger("dsrpc")
-var _ ds.Batching = (*DataStore)(nil)
 
 type DataStore struct {
-	ctx    context.Context
 	client KVStoreClient
 }
+
+var _ds DataStore
+var _ ds.Batching = _ds
 
 func NewDataStore(client KVStoreClient) (*DataStore, error) {
 	if client == nil {
@@ -24,12 +25,11 @@ func NewDataStore(client KVStoreClient) (*DataStore, error) {
 	}
 	return &DataStore{
 		client: client,
-		ctx:    context.Background(),
 	}, nil
 }
 
-func (d *DataStore) Put(k ds.Key, value []byte) error {
-	r, err := d.client.Put(d.ctx, &CommonRequest{
+func (d DataStore) Put(ctx context.Context, k ds.Key, value []byte) error {
+	r, err := d.client.Put(ctx, &CommonRequest{
 		Key:   k.String(),
 		Value: value,
 	})
@@ -42,8 +42,8 @@ func (d *DataStore) Put(k ds.Key, value []byte) error {
 	return nil
 }
 
-func (d *DataStore) Get(k ds.Key) ([]byte, error) {
-	r, err := d.client.Get(d.ctx, &CommonRequest{
+func (d DataStore) Get(ctx context.Context, k ds.Key) ([]byte, error) {
+	r, err := d.client.Get(ctx, &CommonRequest{
 		Key: k.String(),
 	})
 	if err != nil {
@@ -58,8 +58,8 @@ func (d *DataStore) Get(k ds.Key) ([]byte, error) {
 	return r.GetValue(), nil
 }
 
-func (d *DataStore) Has(k ds.Key) (bool, error) {
-	r, err := d.client.Has(d.ctx, &CommonRequest{
+func (d DataStore) Has(ctx context.Context, k ds.Key) (bool, error) {
+	r, err := d.client.Has(ctx, &CommonRequest{
 		Key: k.String(),
 	})
 	if err != nil {
@@ -74,8 +74,8 @@ func (d *DataStore) Has(k ds.Key) (bool, error) {
 	return r.GetSuccess(), nil
 }
 
-func (d *DataStore) GetSize(k ds.Key) (int, error) {
-	r, err := d.client.GetSize(d.ctx, &CommonRequest{
+func (d DataStore) GetSize(ctx context.Context, k ds.Key) (int, error) {
+	r, err := d.client.GetSize(ctx, &CommonRequest{
 		Key: k.String(),
 	})
 	if err != nil {
@@ -90,8 +90,8 @@ func (d *DataStore) GetSize(k ds.Key) (int, error) {
 	return int(r.GetSize()), nil
 }
 
-func (d *DataStore) Delete(k ds.Key) error {
-	r, err := d.client.Delete(d.ctx, &CommonRequest{
+func (d DataStore) Delete(ctx context.Context, k ds.Key) error {
+	r, err := d.client.Delete(ctx, &CommonRequest{
 		Key: k.String(),
 	})
 	if err != nil {
@@ -108,20 +108,20 @@ func (d *DataStore) Delete(k ds.Key) error {
 	return nil
 }
 
-func (d *DataStore) Sync(ds.Key) error {
+func (d DataStore) Sync(ctx context.Context, k ds.Key) error {
 	return nil
 }
 
-func (d *DataStore) Close() error {
+func (d DataStore) Close() error {
 	return nil
 }
 
-func (d *DataStore) Query(q dsq.Query) (dsq.Results, error) {
+func (d DataStore) Query(ctx context.Context, q dsq.Query) (dsq.Results, error) {
 	b, err := json.Marshal(q)
 	if err != nil {
 		return nil, err
 	}
-	r, err := d.client.Query(d.ctx, &QueryRequest{
+	r, err := d.client.Query(ctx, &QueryRequest{
 		Q: b,
 	})
 	if err != nil {
@@ -154,6 +154,6 @@ func (d *DataStore) Query(q dsq.Query) (dsq.Results, error) {
 	}), nil
 }
 
-func (d *DataStore) Batch() (ds.Batch, error) {
+func (d DataStore) Batch(ctx context.Context) (ds.Batch, error) {
 	return ds.NewBasicBatch(d), nil
 }
