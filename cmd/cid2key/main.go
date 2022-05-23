@@ -39,11 +39,11 @@ func main() {
 			logging.Fatal(err)
 			return
 		}
-		logging.Infof("key: %s", dshelp.CidToDsKey(id))
+		logging.Infof("key: %s", dshelp.MultihashToDsKey(id.Hash()))
 		return
 	}
 	if key != "" {
-		id, err := dshelp.DsKeyToCid(ds.NewKey(key))
+		id, err := dshelp.DsKeyToCidV1(ds.NewKey(key), gcid.Raw)
 		if err != nil {
 			logging.Fatal(err)
 			return
